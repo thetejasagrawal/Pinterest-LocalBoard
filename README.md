@@ -1,198 +1,231 @@
 <p align="center">
-  <img src="logo.png" alt="Pinterest LocalBoard logo" width="112">
+  <img src="logo.png" alt="Pinterest LocalBoard logo" width="120">
 </p>
 
-# Pinterest LocalBoard
+<h1 align="center">Pinterest LocalBoard</h1>
 
-A Chrome extension that downloads images from the currently open Pinterest board
-and bundles them into a single ZIP file.
+<p align="center">
+  A clean Chrome extension that saves an entire Pinterest board into one local ZIP.
+</p>
 
-Suggested GitHub repo slug: `pinterest-localboard`
+<p align="center">
+  <a href="https://github.com/txtgrey/Pinterest-LocalBoard/actions/workflows/validate.yml">
+    <img src="https://github.com/txtgrey/Pinterest-LocalBoard/actions/workflows/validate.yml/badge.svg" alt="Validate workflow">
+  </a>
+  <a href="LICENSE">
+    <img src="https://img.shields.io/github/license/txtgrey/Pinterest-LocalBoard?style=flat-square" alt="License">
+  </a>
+  <img src="https://img.shields.io/badge/manifest-v3-black?style=flat-square" alt="Manifest V3">
+  <img src="https://img.shields.io/badge/privacy-local%20only-111827?style=flat-square" alt="Privacy local only">
+</p>
 
-The extension is designed for a simple workflow:
+<p align="center">
+  <a href="#quick-start"><strong>Quick Start</strong></a>
+  ·
+  <a href="#features"><strong>Features</strong></a>
+  ·
+  <a href="#installation"><strong>Installation</strong></a>
+  ·
+  <a href="#how-it-works"><strong>How It Works</strong></a>
+  ·
+  <a href="#development"><strong>Development</strong></a>
+</p>
 
-1. Open a Pinterest board in Chrome
-2. Click the extension
-3. Download the board as one ZIP
+> Built for a simple workflow: open a Pinterest board, click the extension,
+> and download the board as a single ZIP on your machine.
 
-It includes a lightweight Apple-style popup UI, live board detection, progress
-tracking, cancel support, and local download history.
+Pinterest LocalBoard is intentionally focused. It does not use a backend, it
+does not upload your board data, and it does not try to be a Pinterest client.
+It detects the current board page, gathers the highest-quality image URLs the
+page exposes, downloads what it can, and packages the results into one archive.
+
+## Quick Start
+
+1. Clone or download this repository.
+2. Open `chrome://extensions` in Chrome.
+3. Enable `Developer mode`.
+4. Click `Load unpacked`.
+5. Select the [`extension/`](extension) folder.
+6. Open a Pinterest board your current session can access.
+7. Click `Pinterest LocalBoard` and press `Download ZIP`.
 
 ## Features
 
-- Detects Pinterest board pages directly from the active tab
-- Auto-connects to already-open Pinterest tabs
-- Scrolls the board and collects pin images from the current board page
-- Prefers the highest-quality Pinterest image URL available, including `originals` when exposed
-- Downloads all collected images into a single ZIP archive
-- Continues building the ZIP even if a small number of images fail
-- Adds a `_download_report.json` file into the ZIP for failed items and scan details
-- Shows download progress in both the popup and an in-page overlay
-- Stores recent download history locally in the browser
-- Includes quick actions for refresh, reload tab, open board, and copy URL
+| Area | What it does |
+| --- | --- |
+| Board detection | Detects Pinterest board pages from the active tab and re-checks when Pinterest changes the URL without a full page reload. |
+| Full-quality image capture | Prefers the best `i.pinimg.com` image candidate available, including `originals` when Pinterest exposes it. |
+| One-click ZIP export | Downloads collected images and bundles them into a single ZIP file locally in the browser. |
+| Recovery-aware workflow | Retries image downloads, tolerates partial failures, and still completes the ZIP when possible. |
+| Failure reporting | Writes `_download_report.json` into the ZIP with scan details and failed items. |
+| Local history | Stores recent downloads in `chrome.storage.local` with board name, ZIP name, counts, and timestamps. |
+| Clean popup UI | Includes board info, live progress, quick actions, cancel support, and recent downloads. |
 
-## Project Structure
+## Why This Exists
 
-```text
-.
-├── .github
-│   ├── ISSUE_TEMPLATE
-│   ├── workflows
-│   └── pull_request_template.md
-├── CHANGELOG.md
-├── CONTRIBUTING.md
-├── LICENSE
-├── README.md
-├── SECURITY.md
-├── logo.png
-└── extension
-    ├── content.js
-    ├── icons
-    ├── manifest.json
-    ├── popup.css
-    ├── popup.html
-    ├── popup.js
-    └── vendor
-        └── jszip.min.js
-```
+- Saving a board image-by-image is slow and tedious.
+- Pinterest changes pages like a single-page app, so a downloader needs to
+  handle stale detection cleanly.
+- Large boards fail badly when one broken asset aborts the whole job.
+- Many users want a local export flow without a remote service.
+
+Pinterest LocalBoard is designed to be practical first: local-only, explicit,
+and resilient enough for real use.
 
 ## Installation
 
-### Load as an unpacked extension
+### Load As An Unpacked Extension
 
-1. Open Chrome
-2. Go to `chrome://extensions`
-3. Enable `Developer mode`
-4. Click `Load unpacked`
-5. Select the `extension/` folder from this repository
+1. Open Chrome.
+2. Go to `chrome://extensions`.
+3. Turn on `Developer mode`.
+4. Click `Load unpacked`.
+5. Choose the [`extension/`](extension) directory from this repository.
+
+### After Updates
+
+1. Go back to `chrome://extensions`.
+2. Click `Reload` on Pinterest LocalBoard.
+3. Refresh the Pinterest tab if board detection looks stale.
 
 ## Usage
 
-1. Open a Pinterest board page in Chrome
-2. Click the extension icon
-3. Confirm the popup detects the board
-4. Click `Download ZIP`
-5. Wait for the ZIP to finish building and download
+1. Open a Pinterest board page.
+2. Wait until the board content is visible.
+3. Click the extension icon.
+4. Confirm the popup shows the board name.
+5. Click `Download ZIP`.
+6. Wait for the archive to finish downloading.
 
-### Best results
+### Best Results
 
-- Open the actual board page, not a random pin page
-- If Pinterest shows sections instead of pins, open the board feed or a specific section with real pins visible
-- If the extension was just reloaded, refresh the Pinterest tab once if detection feels stale
+- Open the actual board feed, not an individual pin page.
+- If Pinterest is showing section tiles instead of pins, open `All Pins` or a
+  specific section with visible pin tiles.
+- For very large boards, give the page a moment to settle before starting.
 
-## Permissions
+## What You Get
 
-The extension uses the following permissions:
+Each export is a ZIP file named like:
 
-- `activeTab`
-  Used to interact with the current Chrome tab.
-- `scripting`
-  Used to inject the content script into already-open Pinterest tabs when needed.
-- `storage`
-  Used to save recent download history locally.
+```text
+my_board_localboard_2026-04-09.zip
+```
 
-Host permissions:
+Inside the archive:
 
-- `https://pinterest.com/*`
-- `https://*.pinterest.com/*`
-- `https://*.pinimg.com/*`
+```text
+My_Board/
+├── 001_123456789_title.jpg
+├── 002_987654321_title.webp
+├── ...
+└── _download_report.json
+```
 
-These are required to detect Pinterest boards and fetch Pinterest-hosted images.
+The report file includes:
+
+- board name and URL
+- scan totals
+- downloaded and failed counts
+- per-item failure details when some assets could not be fetched
 
 ## How It Works
 
-### Popup
+| Part | File | Responsibility |
+| --- | --- | --- |
+| Popup UI | [`extension/popup.html`](extension/popup.html), [`extension/popup.css`](extension/popup.css), [`extension/popup.js`](extension/popup.js) | Detects the active tab, shows current board state, starts downloads, shows progress, and renders local history. |
+| Content script | [`extension/content.js`](extension/content.js) | Detects board pages, watches Pinterest SPA navigation, scans pins, fetches image candidates, builds the ZIP, and writes history entries. |
+| ZIP library | [`extension/vendor/jszip.min.js`](extension/vendor/jszip.min.js) | Generates the archive in-browser. |
+| CI validation | [`.github/workflows/validate.yml`](.github/workflows/validate.yml) | Runs syntax and manifest validation on pushes and pull requests. |
 
-The popup UI lives in:
+### Reliability Notes
 
-- `extension/popup.html`
-- `extension/popup.css`
-- `extension/popup.js`
+- Handles already-open Pinterest tabs by injecting the content script when
+  needed.
+- Clears stale board detection when the page URL changes.
+- Waits for additional pins or page height growth while scanning.
+- Continues the run when a subset of images fails.
+- Records failed assets instead of silently dropping them.
 
-Responsibilities:
+## Permissions
 
-- Detect the active Pinterest tab
-- Ensure the content script is available
-- Display board information and current run status
-- Surface recent download history
-- Expose small utility actions
+### Extension Permissions
 
-### Content Script
+| Permission | Why it is needed |
+| --- | --- |
+| `activeTab` | Accesses the currently open tab when you trigger the extension. |
+| `scripting` | Injects the content script into already-open Pinterest tabs when necessary. |
+| `storage` | Saves recent download history locally in the browser. |
 
-The board collection and ZIP generation logic lives in:
+### Host Permissions
 
-- `extension/content.js`
+| Host pattern | Why it is needed |
+| --- | --- |
+| `https://pinterest.com/*` | Supports direct Pinterest navigation. |
+| `https://*.pinterest.com/*` | Supports Pinterest subdomains and board pages. |
+| `https://*.pinimg.com/*` | Fetches the actual image assets used in the ZIP. |
 
-Responsibilities:
+## Privacy
 
-- Detect whether the current page is a Pinterest board
-- Re-detect on Pinterest SPA-style URL changes
-- Scan visible pin cards and image candidates
-- Prefer best-quality image URLs
-- Download images with retry behavior
-- Build the final ZIP
-- Save successful downloads to local history
-
-### ZIP Library
-
-The extension uses JSZip from:
-
-- `extension/vendor/jszip.min.js`
-
-## Download History
-
-Recent successful downloads are stored in `chrome.storage.local`.
-
-Each history entry includes:
-
-- board name
-- board URL
-- generated ZIP filename
-- image count
-- failed image count
-- creation timestamp
-
-History is local to the browser profile where the extension is installed.
+- No backend
+- No analytics
+- No external upload step
+- Download history is stored locally in Chrome only
+- The extension only works with content your current Pinterest session can access
 
 ## Limitations
 
-- The extension only downloads images the current Pinterest page and session can access
-- It does not bypass private-board permissions
-- It depends on Pinterest’s current DOM and data exposure patterns
-- Extremely large boards may still hit browser memory limits because the ZIP is assembled in-browser
-- Some boards may expose fewer images if Pinterest lazy-loads content aggressively or changes internal page structure
-- If Pinterest withholds some assets, the extension will still finish when possible and list failures in `_download_report.json`
+- Pinterest LocalBoard does not bypass private-board permissions.
+- It depends on Pinterest's current DOM and client-side data exposure.
+- Extremely large boards can still hit browser memory limits because ZIP
+  assembly happens in-browser.
+- If Pinterest stops exposing high-quality image URLs in the page, output
+  quality may degrade until detection logic is updated.
 
 ## Troubleshooting
 
-### The popup says it cannot find a board
+<details>
+  <summary><strong>The popup says no board was found</strong></summary>
 
-- Make sure the active tab is a Pinterest board URL
-- Refresh the Pinterest tab once
-- Reopen the popup
+  <br>
 
-### The board opens but the extension collects too few images
+  Make sure the active tab is a Pinterest board URL, reload the extension in
+  `chrome://extensions`, then refresh the Pinterest tab once.
+</details>
 
-- Scroll the board a bit first, then try again
-- Open the board feed instead of a board overview with only sections
-- Try a public board that clearly shows pin tiles
+<details>
+  <summary><strong>The extension finds too few images</strong></summary>
 
-### The ZIP download fails on large boards
+  <br>
 
-- Retry on a smaller board first
-- Close other memory-heavy tabs
-- Try again after reloading Chrome
+  Scroll the board a little first, open the actual board feed instead of a
+  board overview with sections only, and try a board with clearly visible pins.
+</details>
 
-### History is empty
+<details>
+  <summary><strong>The ZIP finishes with some failures</strong></summary>
 
-- History only records successful ZIP completions
-- Reload the extension after permission changes
+  <br>
+
+  Open `_download_report.json` inside the ZIP. The extension is designed to
+  finish with partial success instead of failing the whole run when only some
+  assets are unavailable.
+</details>
+
+<details>
+  <summary><strong>History looks empty after an update</strong></summary>
+
+  <br>
+
+  Reload the extension once. Recent versions migrate older history entries to
+  the new LocalBoard storage key automatically.
+</details>
 
 ## Development
 
-There is no build step right now. The extension is plain HTML, CSS, and JavaScript.
+There is no build step. The project is plain HTML, CSS, and JavaScript.
 
-### Validate locally
+### Validate Locally
 
 ```bash
 node --check extension/popup.js
@@ -200,33 +233,42 @@ node --check extension/content.js
 python3 -m json.tool extension/manifest.json >/dev/null
 ```
 
-GitHub Actions runs the same validation on every push to `main` and every pull
-request.
+### Project Layout
 
-### Reload after changes
+```text
+.
+├── .github/
+├── CHANGELOG.md
+├── CONTRIBUTING.md
+├── LICENSE
+├── README.md
+├── SECURITY.md
+├── logo.png
+└── extension/
+    ├── content.js
+    ├── icons/
+    ├── manifest.json
+    ├── popup.css
+    ├── popup.html
+    ├── popup.js
+    └── vendor/
+```
 
-After editing files:
+For contribution and validation expectations, see
+[`CONTRIBUTING.md`](CONTRIBUTING.md).
 
-1. Open `chrome://extensions`
-2. Click `Reload` on the unpacked extension
-3. Refresh the Pinterest tab if needed
+## Roadmap
 
-## Privacy
-
-- No backend is used
-- No analytics are included
-- Download history is stored locally in Chrome only
-- The extension does not send your board data to an external server
-
-## Notes
-
-- This project is not affiliated with Pinterest
-- Pinterest may change its site structure at any time, which can require selector or detection updates
-
-## Contributing
-
-See `CONTRIBUTING.md` for local workflow, validation steps, and PR guidance.
+- Stronger recovery for very large boards
+- Optional background-worker architecture for longer-running jobs
+- Better reporting for skipped pins and selector mismatches
+- Future packaging for easier distribution beyond unpacked installs
 
 ## License
 
-This project is licensed under the MIT License. See `LICENSE`.
+MIT. See [`LICENSE`](LICENSE).
+
+## Disclaimer
+
+Pinterest LocalBoard is an independent project and is not affiliated with,
+endorsed by, or sponsored by Pinterest.
