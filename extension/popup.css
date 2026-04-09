@@ -1,0 +1,358 @@
+:root {
+  color-scheme: light;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 388px;
+  background: linear-gradient(180deg, #f3f4f7 0%, #eceef3 100%);
+  color: #111111;
+}
+
+.app {
+  padding: 16px;
+  display: grid;
+  gap: 10px;
+}
+
+.hero {
+  padding: 2px 2px 2px;
+}
+
+.heroBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.eyebrow {
+  margin: 0;
+  color: #6b6f76;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.brandSubline {
+  margin: 3px 0 0;
+  color: #8f949b;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.statePill {
+  border-radius: 999px;
+  background: rgba(120, 124, 132, 0.12);
+  color: #4d535b;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 7px 10px;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+h1 {
+  margin: 12px 0 0;
+  font-size: 28px;
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+  font-weight: 700;
+}
+
+.subtitle {
+  margin: 8px 0 0;
+  color: #646a73;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.surface {
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 14px 32px rgba(17, 24, 39, 0.08);
+  padding: 14px;
+}
+
+.surfaceHeader,
+.metaRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+}
+
+.surfaceHeader {
+  margin-bottom: 10px;
+}
+
+.surfaceTitle,
+.metaLabel {
+  margin: 0;
+  color: #6c727c;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.miniButton {
+  border-radius: 999px;
+  background: #f4f5f7;
+  color: #2b2e33;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 12px;
+}
+
+.boardName {
+  margin: 0;
+  color: #111111;
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  word-break: break-word;
+}
+
+.boardPath {
+  margin: 6px 0 0;
+  color: #7a8088;
+  font-size: 12px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.metaList {
+  margin-top: 12px;
+  display: grid;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(17, 17, 17, 0.06);
+}
+
+.metaValue {
+  color: #20242a;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: right;
+  max-width: 62%;
+  word-break: break-word;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 0 14px;
+}
+
+.statTile {
+  border-radius: 16px;
+  background: #f7f8fa;
+  border: 1px solid rgba(17, 17, 17, 0.05);
+  padding: 12px;
+}
+
+.stats dt {
+  margin: 0 0 6px;
+  color: #7a8088;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.stats dd {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.progressMeta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  color: #6a7079;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.statusInline {
+  margin: 0;
+  color: #20242a;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.progressShell {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #eceef2;
+}
+
+.progressFill {
+  height: 100%;
+  width: 0%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #0a84ff 0%, #5ac8fa 100%);
+  transition: width 0.2s ease;
+}
+
+.warningLine {
+  margin: 10px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.warningLine {
+  color: #c62828;
+}
+
+.toolRow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.toolButton {
+  border-radius: 14px;
+  background: #f4f5f7;
+  color: #2b2e33;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 11px 10px;
+}
+
+.footNote {
+  margin: 10px 0 0;
+  color: #7a8088;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.historyList {
+  display: grid;
+  gap: 10px;
+}
+
+.historyEmpty {
+  margin: 0;
+  color: #7a8088;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.historyItem {
+  display: grid;
+  gap: 6px;
+  padding: 11px 12px;
+  border-radius: 16px;
+  background: #f7f8fa;
+  border: 1px solid rgba(17, 17, 17, 0.05);
+}
+
+.historyTop {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: start;
+}
+
+.historyBoard {
+  margin: 0;
+  color: #17191c;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.historyMeta {
+  margin: 0;
+  color: #7a8088;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.historyFile {
+  margin: 0;
+  color: #4a4f56;
+  font-size: 11px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.historyOpen {
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: #eceef2;
+  color: #2a2e33;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 7px 10px;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+}
+
+button {
+  appearance: none;
+  border: 0;
+  border-radius: 14px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 13px 14px;
+  transition:
+    transform 0.12s ease,
+    opacity 0.12s ease,
+    background 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+button:disabled {
+  cursor: default;
+  opacity: 0.52;
+}
+
+.primary {
+  flex: 1;
+  background: #111111;
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(17, 17, 17, 0.18);
+}
+
+.secondary {
+  min-width: 90px;
+  background: #f4f5f7;
+  color: #2d3137;
+}
+
+.secondary.is-live {
+  background: #e9f2ff;
+  color: #0a63c9;
+}
+
+.hidden {
+  display: none;
+}

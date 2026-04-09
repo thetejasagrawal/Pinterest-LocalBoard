@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pinterest LocalBoard</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="hero">
+        <div class="heroBar">
+          <div>
+            <p class="eyebrow">Pinterest LocalBoard</p>
+            <p class="brandSubline">Simple full-quality board downloader</p>
+          </div>
+          <span id="statePill" class="statePill">Idle</span>
+        </div>
+        <h1 id="title">Waiting for a board</h1>
+        <p id="subtitle" class="subtitle">
+          Open a Pinterest board page, then download it in one ZIP.
+        </p>
+      </header>
+
+      <section class="surface boardSurface">
+        <div class="surfaceHeader">
+          <p class="surfaceTitle">Current Board</p>
+          <button id="copyUrlButton" class="miniButton" type="button">
+            Copy URL
+          </button>
+        </div>
+        <p id="boardLine" class="boardName">Not connected</p>
+        <p id="tabHint" class="boardPath">No Pinterest board detected yet.</p>
+        <div class="metaList">
+          <div class="metaRow">
+            <span class="metaLabel">Detection</span>
+            <span id="matchLine" class="metaValue">Waiting</span>
+          </div>
+          <div class="metaRow">
+            <span class="metaLabel">Latest ZIP</span>
+            <span id="lastZipLine" class="metaValue">None yet</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="surface statusSurface">
+        <dl class="stats">
+          <div class="statTile">
+            <dt>Expected Pins</dt>
+            <dd id="expectedPins">-</dd>
+          </div>
+          <div class="statTile">
+            <dt>Collected</dt>
+            <dd id="collectedPins">0</dd>
+          </div>
+          <div class="statTile">
+            <dt>Downloaded</dt>
+            <dd id="downloadedPins">0</dd>
+          </div>
+        </dl>
+
+        <div class="progressMeta">
+          <span id="statusLine" class="statusInline">Ready.</span>
+          <span id="progressPercent">0%</span>
+        </div>
+        <div class="progressShell" aria-hidden="true">
+          <div id="progressFill" class="progressFill"></div>
+        </div>
+
+        <p id="warningLine" class="warningLine hidden"></p>
+      </section>
+
+      <section class="surface toolsSurface">
+        <div class="toolRow">
+          <button id="refreshButton" class="toolButton" type="button">
+            Refresh
+          </button>
+          <button id="reloadTabButton" class="toolButton" type="button">
+            Reload Tab
+          </button>
+          <button id="openBoardButton" class="toolButton" type="button">
+            Open Board
+          </button>
+        </div>
+        <p class="footNote">
+          Uses the highest-quality image URL Pinterest exposes and bundles the
+          results into one ZIP.
+        </p>
+      </section>
+
+      <section class="surface historySurface">
+        <div class="surfaceHeader">
+          <p class="surfaceTitle">Recent Downloads</p>
+          <button id="clearHistoryButton" class="miniButton" type="button">
+            Clear
+          </button>
+        </div>
+        <div id="historyList" class="historyList">
+          <p class="historyEmpty">No downloads yet.</p>
+        </div>
+      </section>
+
+      <footer class="actions">
+        <button id="startButton" class="primary" type="button">
+          Download ZIP
+        </button>
+        <button id="cancelButton" class="secondary" type="button" disabled>
+          Cancel
+        </button>
+      </footer>
+    </main>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

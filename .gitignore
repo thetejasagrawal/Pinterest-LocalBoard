@@ -1,0 +1,13 @@
+.DS_Store
+Thumbs.db
+board.html
+*.log
+*.tmp
+*.temp
+*.zip
+node_modules/
+npm-debug.log*
+.AppleDouble
+.LSOverride
+.idea/
+.vscode/

@@ -1,0 +1,29 @@
+name: Validate
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Check popup syntax
+        run: node --check extension/popup.js
+
+      - name: Check content script syntax
+        run: node --check extension/content.js
+
+      - name: Validate manifest JSON
+        run: python3 -m json.tool extension/manifest.json >/dev/null
