@@ -13,6 +13,8 @@ manual versioning flow until formal releases are added.
 - Renamed internal history storage to `localBoardDownloadHistory` with legacy
   history migration
 - Updated generated ZIP names to include the `localboard` product tag
+- Tightened manifest metadata for Chrome Web Store submission
+- Added store listing assets, privacy/support docs, and a packaging script
 
 ### Added
 

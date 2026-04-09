@@ -5,6 +5,8 @@ board.html
 *.tmp
 *.temp
 *.zip
+dist/
+output/
 node_modules/
 npm-debug.log*
 .AppleDouble

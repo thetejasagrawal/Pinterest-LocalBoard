@@ -28,6 +28,8 @@
   ·
   <a href="#how-it-works"><strong>How It Works</strong></a>
   ·
+  <a href="#chrome-web-store"><strong>Chrome Web Store</strong></a>
+  ·
   <a href="#development"><strong>Development</strong></a>
 </p>
 
@@ -220,6 +222,23 @@ The report file includes:
   Reload the extension once. Recent versions migrate older history entries to
   the new LocalBoard storage key automatically.
 </details>
+
+## Chrome Web Store
+
+The repository includes Chrome Web Store submission materials:
+
+- listing copy: [`chrome-web-store/listing.md`](chrome-web-store/listing.md)
+- upload checklist: [`chrome-web-store/checklist.md`](chrome-web-store/checklist.md)
+- privacy policy: [`PRIVACY_POLICY.md`](PRIVACY_POLICY.md)
+- support page: [`SUPPORT.md`](SUPPORT.md)
+- package script: [`scripts/build-chrome-web-store-package.sh`](scripts/build-chrome-web-store-package.sh)
+- store screenshots and promo assets: [`chrome-web-store/assets/`](chrome-web-store/assets)
+
+Build the upload package with:
+
+```bash
+scripts/build-chrome-web-store-package.sh
+```
 
 ## Development
 
