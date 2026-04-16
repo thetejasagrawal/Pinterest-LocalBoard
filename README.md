@@ -17,6 +17,9 @@
   </a>
   <img src="https://img.shields.io/badge/manifest-v3-black?style=flat-square" alt="Manifest V3">
   <img src="https://img.shields.io/badge/privacy-local%20only-111827?style=flat-square" alt="Privacy local only">
+  <a href="https://chromewebstore.google.com/detail/pinterest-localboard/">
+    <img src="https://img.shields.io/badge/Chrome%20Web%20Store-available-4285F4?style=flat-square&logo=googlechrome&logoColor=white" alt="Available on Chrome Web Store">
+  </a>
 </p>
 
 <p align="center">
@@ -225,7 +228,11 @@ The report file includes:
 
 ## Chrome Web Store
 
-The repository includes Chrome Web Store submission materials:
+Pinterest LocalBoard is available on the Chrome Web Store — no developer mode required:
+
+**[→ Install from the Chrome Web Store](https://chromewebstore.google.com/detail/pinterest-localboard/)**
+
+The repository also includes Chrome Web Store submission materials:
 
 - listing copy: [`chrome-web-store/listing.md`](chrome-web-store/listing.md)
 - upload checklist: [`chrome-web-store/checklist.md`](chrome-web-store/checklist.md)
