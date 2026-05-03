@@ -47,7 +47,19 @@
     contextUrl: "",
     run: createIdleStatus(),
     overlay: null,
-    jobPromise: null
+    jobPromise: null,
+    abortController: null
+  };
+
+  const selection = {
+    active: false,
+    selectedIds: new Set(),
+    styleEl: null,
+    barHost: null,
+    clickHandler: null,
+    observer: null,
+    _barCountEl: null,
+    _barDlBtn: null,
   };
 
   class CancelledError extends Error {
@@ -81,7 +93,7 @@
 
     if (message.type === "START_DOWNLOAD") {
       try {
-        beginRun();
+        beginRun(message.pinIds || null);
         sendResponse({ ok: true, status: getSerializableStatus() });
       } catch (error) {
         sendResponse({
@@ -90,6 +102,27 @@
         });
       }
 
+      return false;
+    }
+
+    if (message.type === "ENTER_SELECTION_MODE") {
+      enterSelectionMode();
+      sendResponse({ ok: true });
+      return false;
+    }
+
+    if (message.type === "EXIT_SELECTION_MODE") {
+      exitSelectionMode();
+      sendResponse({ ok: true });
+      return false;
+    }
+
+    if (message.type === "GET_SELECTION_STATE") {
+      sendResponse({
+        active: selection.active,
+        count: selection.selectedIds.size,
+        ids: [...selection.selectedIds]
+      });
       return false;
     }
 
@@ -118,7 +151,9 @@
   function getSerializableStatus() {
     return {
       ...state.run,
-      stage: STAGES.has(state.run.stage) ? state.run.stage : "idle"
+      stage: STAGES.has(state.run.stage) ? state.run.stage : "idle",
+      selectionActive: selection.active,
+      selectionCount: selection.selectedIds.size
     };
   }
 
@@ -139,7 +174,7 @@
     }).catch(() => {});
   }
 
-  function beginRun() {
+  function beginRun(pinIds = null) {
     if (state.jobPromise) {
       return;
     }
@@ -154,12 +189,18 @@
         "This board has sections. If Pinterest is showing section tiles instead of pins, open the board's All Pins view or a section page first.";
     }
 
-    state.jobPromise = runDownloadWorkflow(context)
+    if (selection.active) {
+      exitSelectionMode();
+    }
+
+    state.abortController = new AbortController();
+    state.jobPromise = runDownloadWorkflow(context, pinIds)
       .catch((error) => {
         console.error(`${EXTENSION_NAME}:`, error);
       })
       .finally(() => {
         state.jobPromise = null;
+        state.abortController = null;
       });
   }
 
@@ -168,9 +209,10 @@
       return;
     }
 
+    state.abortController?.abort();
     updateRun({
       cancelRequested: true,
-      message: "Cancelling after the current step finishes…"
+      message: "Cancelling…"
     });
   }
 
@@ -180,16 +222,18 @@
     }
   }
 
-  async function runDownloadWorkflow(context) {
+  async function runDownloadWorkflow(context, pinIds = null) {
     const initialScrollY = window.scrollY;
 
     updateRun({
       stage: "scanning",
-      message: "Scanning the board and collecting full-quality image links…",
+      message: pinIds
+        ? `Scanning for ${pinIds.length} selected ${pinIds.length === 1 ? "pin" : "pins"}…`
+        : "Scanning the board and collecting full-quality image links…",
       collected: 0,
       downloaded: 0,
       failed: 0,
-      expected: context.pinCount || 0,
+      expected: pinIds ? pinIds.length : (context.pinCount || 0),
       zipProgress: 0,
       warning: context.warning || "",
       cancelRequested: false,
@@ -200,7 +244,7 @@
     });
 
     try {
-      const scanResult = await collectBoardRecords(context);
+      const scanResult = await collectBoardRecords(context, pinIds);
       const records = scanResult.records;
       assertNotCancelled();
 
@@ -214,7 +258,7 @@
         failed: 0
       });
 
-      const zipResult = await buildZip(records, context, scanResult);
+      const zipResult = await buildZip(records, context, scanResult, state.abortController?.signal);
       assertNotCancelled();
 
       triggerBlobDownload(zipResult.blob, zipResult.filename);
@@ -453,7 +497,7 @@
       : `${withLeadingSlash}/`;
   }
 
-  async function collectBoardRecords(context) {
+  async function collectBoardRecords(context, pinIds = null) {
     await settlePage();
     assertNotCancelled();
 
@@ -517,7 +561,18 @@
       throw new Error("No board pins were detected on this page.");
     }
 
-    const sortedRecords = [...records.values()].sort((a, b) => a.order - b.order);
+    let sortedRecords = [...records.values()].sort((a, b) => a.order - b.order);
+
+    if (pinIds && pinIds.length > 0) {
+      const pinIdSet = new Set(pinIds.map(String));
+      sortedRecords = sortedRecords.filter((r) => pinIdSet.has(String(r.pinId)));
+      if (sortedRecords.length === 0) {
+        throw new Error(
+          "None of the selected pins were found while scanning the board. Try scrolling the board to load them first."
+        );
+      }
+    }
+
     return {
       records: sortedRecords,
       scanReport: {
@@ -744,7 +799,7 @@
       });
 
       pollTimer = window.setInterval(() => {
-        if (Date.now() >= deadline || hasAdvanced()) {
+        if (Date.now() >= deadline || hasAdvanced() || state.run.cancelRequested) {
           finish();
         }
       }, 250);
@@ -765,7 +820,7 @@
     window.scrollTo(0, nextScroll);
   }
 
-  async function buildZip(records, context, scanResult) {
+  async function buildZip(records, context, scanResult, runSignal) {
     if (typeof JSZip === "undefined") {
       throw new Error("JSZip was not loaded into the content script.");
     }
@@ -783,7 +838,7 @@
     await runWithConcurrency(records, concurrency, async (record, index) => {
       assertNotCancelled();
       try {
-        const response = await fetchBestImage(record);
+        const response = await fetchBestImage(record, runSignal);
         assertNotCancelled();
 
         const extension = pickFileExtension(response.url, response.blob.type);
@@ -892,15 +947,16 @@
     };
   }
 
-  async function fetchBestImage(record) {
+  async function fetchBestImage(record, runSignal) {
     const errors = [];
+    const MAX_ATTEMPTS = 3;
 
     for (const candidate of record.candidates) {
       assertNotCancelled();
 
-      for (let attempt = 1; attempt <= 3; attempt += 1) {
+      for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
         try {
-          const response = await fetchWithTimeout(candidate, 30000);
+          const response = await fetchWithTimeout(candidate, 30000, runSignal);
           if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);
           }
@@ -909,15 +965,17 @@
           if (!blob.type.startsWith("image/")) {
             throw new Error(`Unexpected content type: ${blob.type || "unknown"}`);
           }
+          if (blob.size === 0) {
+            throw new Error("Server returned an empty file.");
+          }
 
-          return {
-            blob,
-            url: response.url || candidate
-          };
+          return { blob, url: response.url || candidate };
         } catch (error) {
+          if (error instanceof CancelledError) throw error;
           errors.push(`${candidate} (attempt ${attempt}): ${error.message}`);
-          if (attempt < 3 && isRetriableError(error)) {
-            await wait(400 * attempt);
+
+          if (attempt < MAX_ATTEMPTS && isRetriableError(error)) {
+            await wait(retryDelay(attempt));
             continue;
           }
 
@@ -927,13 +985,16 @@
     }
 
     throw new Error(
-      `Could not download pin ${record.pinId}. Tried ${record.candidates.length} URL candidates.`
+      `Could not download pin ${record.pinId}. Tried ${record.candidates.length} URL(s): ${errors.slice(-3).join("; ")}`
     );
   }
 
-  async function fetchWithTimeout(url, timeoutMs) {
+  async function fetchWithTimeout(url, timeoutMs, runSignal) {
     const controller = new AbortController();
     const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+
+    const onRunAbort = () => controller.abort();
+    runSignal?.addEventListener("abort", onRunAbort, { once: true });
 
     try {
       return await fetch(url, {
@@ -943,19 +1004,31 @@
       });
     } finally {
       window.clearTimeout(timer);
+      runSignal?.removeEventListener("abort", onRunAbort);
     }
   }
 
   function isRetriableError(error) {
+    if (error instanceof CancelledError) return false;
     const message = error?.message || "";
+    const name    = error?.name    || "";
     return (
+      name === "AbortError" ||
+      name === "TypeError" ||
       message.includes("HTTP 429") ||
       message.includes("HTTP 500") ||
       message.includes("HTTP 502") ||
       message.includes("HTTP 503") ||
       message.includes("HTTP 504") ||
-      error?.name === "AbortError"
+      message.includes("Failed to fetch") ||
+      message.includes("NetworkError") ||
+      message.includes("network error")
     );
+  }
+
+  function retryDelay(attempt) {
+    const base = Math.min(600 * Math.pow(2, attempt - 1), 10000);
+    return base + Math.random() * base * 0.4;
   }
 
   async function runWithConcurrency(items, concurrency, worker) {
@@ -1318,7 +1391,346 @@
     return 0;
   }
 
+  /* ── Selection mode ── */
+
+  function enterSelectionMode() {
+    if (selection.active || state.jobPromise) return;
+    selection.active = true;
+    selection.selectedIds.clear();
+
+    injectSelectionStyles();
+    refreshSelectionCheckboxes();
+
+    selection.observer = new MutationObserver(debounce(refreshSelectionCheckboxes, 200));
+    selection.observer.observe(document.body, { childList: true, subtree: true });
+
+    selection.clickHandler = handleSelectionClick;
+    document.addEventListener("click", selection.clickHandler, true);
+
+    showSelectionBar();
+    notifyStatusChange();
+  }
+
+  function exitSelectionMode() {
+    if (!selection.active) return;
+    selection.active = false;
+
+    selection.styleEl?.remove();
+    selection.styleEl = null;
+
+    document.querySelectorAll("[data-lb-sel]").forEach((el) => el.removeAttribute("data-lb-sel"));
+    document.querySelectorAll(".__lb_chk__").forEach((el) => el.remove());
+
+    if (selection.clickHandler) {
+      document.removeEventListener("click", selection.clickHandler, true);
+      selection.clickHandler = null;
+    }
+
+    selection.observer?.disconnect();
+    selection.observer = null;
+
+    selection.barHost?.remove();
+    selection.barHost = null;
+    selection._barCountEl = null;
+    selection._barDlBtn = null;
+
+    selection.selectedIds.clear();
+    notifyStatusChange();
+  }
+
+  function injectSelectionStyles() {
+    const style = document.createElement("style");
+    style.id = "__lb_sel_style__";
+    style.textContent = `
+      [data-test-id="pin"][data-test-pin-id] {
+        cursor: pointer !important;
+        position: relative !important;
+        transition: transform 0.15s ease !important;
+      }
+      [data-test-id="pin"][data-test-pin-id]:hover .__lb_chk__ {
+        transform: scale(1.08) !important;
+        background: rgba(255,255,255,1) !important;
+        border-color: rgba(0,0,0,0.32) !important;
+      }
+      .__lb_chk__ {
+        position: absolute !important;
+        top: 10px !important;
+        left: 10px !important;
+        width: 24px !important;
+        height: 24px !important;
+        border-radius: 50% !important;
+        background: rgba(255,255,255,0.94) !important;
+        border: 2px solid rgba(0,0,0,0.2) !important;
+        pointer-events: none !important;
+        z-index: 9999 !important;
+        box-sizing: border-box !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.14) !important;
+        transition:
+          transform 0.18s cubic-bezier(0.2, 0.9, 0.3, 1.4),
+          background 0.15s ease,
+          border-color 0.15s ease,
+          box-shadow 0.15s ease !important;
+      }
+      [data-test-id="pin"][data-test-pin-id][data-lb-sel] {
+        outline: 3px solid #e60023 !important;
+        outline-offset: -3px !important;
+      }
+      [data-test-id="pin"][data-test-pin-id][data-lb-sel] .__lb_chk__ {
+        background: #e60023 !important;
+        border-color: #e60023 !important;
+        transform: scale(1.1) !important;
+        box-shadow: 0 3px 14px rgba(230, 0, 35, 0.45) !important;
+      }
+      [data-test-id="pin"][data-test-pin-id][data-lb-sel] .__lb_chk__::after {
+        content: "" !important;
+        display: block !important;
+        position: absolute !important;
+        top: 4px !important;
+        left: 7px !important;
+        width: 6px !important;
+        height: 10px !important;
+        border-right: 2.2px solid #fff !important;
+        border-bottom: 2.2px solid #fff !important;
+        transform: rotate(45deg) !important;
+        box-sizing: border-box !important;
+        animation: __lb_check_pop 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.4) !important;
+      }
+      @keyframes __lb_check_pop {
+        from { opacity: 0; transform: rotate(45deg) scale(0.6); }
+        to   { opacity: 1; transform: rotate(45deg) scale(1); }
+      }
+    `;
+    document.head.appendChild(style);
+    selection.styleEl = style;
+  }
+
+  function refreshSelectionCheckboxes() {
+    if (!selection.active) return;
+    const pins = document.querySelectorAll(PIN_CARD_SELECTOR);
+    for (const pin of pins) {
+      if (pin.querySelector(".__lb_chk__")) continue;
+      const chk = document.createElement("span");
+      chk.className = "__lb_chk__";
+      pin.appendChild(chk);
+      const pinId = pin.getAttribute("data-test-pin-id");
+      if (pinId && selection.selectedIds.has(pinId)) {
+        pin.setAttribute("data-lb-sel", "1");
+      }
+    }
+  }
+
+  function handleSelectionClick(e) {
+    const pin = e.target.closest(PIN_CARD_SELECTOR);
+    if (!pin) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const pinId = pin.getAttribute("data-test-pin-id");
+    if (!pinId) return;
+    if (selection.selectedIds.has(pinId)) {
+      selection.selectedIds.delete(pinId);
+      pin.removeAttribute("data-lb-sel");
+    } else {
+      selection.selectedIds.add(pinId);
+      pin.setAttribute("data-lb-sel", "1");
+    }
+    updateSelectionBar();
+    notifyStatusChange();
+  }
+
+  function showSelectionBar() {
+    const host = document.createElement("div");
+    host.id = "__lb_sel_bar__";
+    host.style.cssText = [
+      "position:fixed",
+      "bottom:0",
+      "left:0",
+      "right:0",
+      "z-index:2147483647",
+      "pointer-events:none",
+      "display:flex",
+      "justify-content:center",
+      "padding:0 16px 24px"
+    ].join(";");
+
+    const shadow = host.attachShadow({ mode: "open" });
+    shadow.innerHTML = `
+      <style>
+        :host { all: initial; }
+        .bar {
+          display: inline-flex;
+          align-items: center;
+          gap: 14px;
+          padding: 9px 9px 9px 18px;
+          background: rgba(18, 19, 22, 0.88);
+          backdrop-filter: blur(22px) saturate(180%);
+          -webkit-backdrop-filter: blur(22px) saturate(180%);
+          border-radius: 999px;
+          box-shadow:
+            0 12px 40px rgba(0, 0, 0, 0.22),
+            0 2px 6px rgba(0, 0, 0, 0.12),
+            inset 0 0.5px 0 rgba(255, 255, 255, 0.08);
+          color: #fff;
+          font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+          pointer-events: all;
+          animation: lb-slide-up 0.32s cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
+        }
+        @keyframes lb-slide-up {
+          from { transform: translateY(140%); opacity: 0; }
+          to   { transform: translateY(0);     opacity: 1; }
+        }
+        .info {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .ico {
+          width: 16px;
+          height: 16px;
+          color: #ff5168;
+          flex-shrink: 0;
+        }
+        .count {
+          font-size: 13px;
+          font-weight: 600;
+          color: rgba(255, 255, 255, 0.9);
+          letter-spacing: -0.005em;
+          font-variant-numeric: tabular-nums;
+        }
+        .count em {
+          font-style: normal;
+          font-weight: 700;
+          color: #fff;
+        }
+        .actions {
+          display: inline-flex;
+          gap: 6px;
+        }
+        button {
+          appearance: none;
+          border: 0;
+          cursor: pointer;
+          font: inherit;
+          font-size: 12.5px;
+          font-weight: 600;
+          padding: 8px 14px;
+          border-radius: 999px;
+          letter-spacing: -0.005em;
+          transition:
+            background 0.15s ease,
+            opacity 0.15s ease,
+            transform 0.1s ease,
+            box-shadow 0.18s ease;
+        }
+        button:active:not(:disabled) { transform: scale(0.96); }
+        button:disabled { opacity: 0.35; cursor: default; }
+        .exit {
+          background: rgba(255, 255, 255, 0.1);
+          color: rgba(255, 255, 255, 0.85);
+        }
+        .exit:hover { background: rgba(255, 255, 255, 0.16); color: #fff; }
+        .dl {
+          background: #fff;
+          color: #0c0d10;
+          padding: 8px 16px;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+        }
+        .dl:hover:not(:disabled) { background: #f4f4f4; }
+        .dl-icon {
+          width: 13px;
+          height: 13px;
+          margin-right: 5px;
+          vertical-align: -2px;
+        }
+      </style>
+      <div class="bar">
+        <span class="info">
+          <svg class="ico" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <circle cx="8" cy="8" r="7" fill="currentColor" opacity="0.18"/>
+            <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.4"/>
+            <path d="M5 8.2l2.2 2.2 3.8-4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span class="count"><em id="cnt">0</em> selected</span>
+        </span>
+        <span class="actions">
+          <button class="exit" type="button">Exit</button>
+          <button class="dl"   type="button" disabled>
+            <svg class="dl-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M8 2.5v7.6m0 0l2.6-2.6M8 10.1L5.4 7.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M3.2 12.5v.4a1 1 0 001 1h7.6a1 1 0 001-1v-.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            </svg>Download
+          </button>
+        </span>
+      </div>
+    `;
+
+    const countEl = shadow.getElementById("cnt");
+    const exitBtn  = shadow.querySelector(".exit");
+    const dlBtn    = shadow.querySelector(".dl");
+
+    exitBtn.addEventListener("click", exitSelectionMode);
+    dlBtn.addEventListener("click", () => {
+      if (selection.selectedIds.size > 0) {
+        beginRun([...selection.selectedIds]);
+      }
+    });
+
+    selection._barCountEl = countEl;
+    selection._barDlBtn   = dlBtn;
+
+    document.documentElement.appendChild(host);
+    selection.barHost = host;
+    updateSelectionBar();
+  }
+
+  function updateSelectionBar() {
+    const count = selection.selectedIds.size;
+    if (selection._barCountEl) selection._barCountEl.textContent = count;
+    if (selection._barDlBtn)   selection._barDlBtn.disabled = count === 0;
+  }
+
   function wait(durationMs) {
     return new Promise((resolve) => window.setTimeout(resolve, durationMs));
   }
+
+  function debounce(fn, ms) {
+    let timer = null;
+    return (...args) => {
+      if (timer) window.clearTimeout(timer);
+      timer = window.setTimeout(() => { timer = null; fn(...args); }, ms);
+    };
+  }
+
+  function startUrlWatcher() {
+    let lastUrl = location.href;
+
+    function onNavigate() {
+      if (location.href === lastUrl) return;
+      lastUrl = location.href;
+
+      state.contextCache = null;
+      state.contextUrl   = "";
+
+      if (selection.active) {
+        exitSelectionMode();
+      }
+
+      if (state.jobPromise && !state.run.cancelRequested) {
+        requestCancel();
+      }
+    }
+
+    try {
+      const origPush    = history.pushState.bind(history);
+      const origReplace = history.replaceState.bind(history);
+      history.pushState    = (...args) => { origPush(...args);    onNavigate(); };
+      history.replaceState = (...args) => { origReplace(...args); onNavigate(); };
+    } catch {
+      /* ignore if history API is restricted */
+    }
+
+    window.addEventListener("popstate", onNavigate);
+    window.setInterval(onNavigate, 800);
+  }
+
+  startUrlWatcher();
 })();
