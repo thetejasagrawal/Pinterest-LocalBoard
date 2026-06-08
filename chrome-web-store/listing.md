@@ -31,6 +31,7 @@ Key features:
 
 - detects Pinterest board pages from the active tab
 - works with already-open Pinterest tabs
+- supports public boards and private boards visible to your signed-in Pinterest session
 - prefers the highest-quality image URL exposed by Pinterest
 - builds one ZIP locally in the browser
 - keeps recent download history locally
@@ -42,11 +43,11 @@ to a remote server.
 ## Store Listing URLs
 
 - Homepage / website:
-  `https://github.com/txtgrey/Pinterest-LocalBoard`
+  `https://github.com/thetejasagrawal/Pinterest-LocalBoard`
 - Support URL:
-  `https://github.com/txtgrey/Pinterest-LocalBoard/blob/main/SUPPORT.md`
+  `https://github.com/thetejasagrawal/Pinterest-LocalBoard/blob/main/SUPPORT.md`
 - Privacy policy URL:
-  `https://github.com/txtgrey/Pinterest-LocalBoard/blob/main/PRIVACY_POLICY.md`
+  `https://github.com/thetejasagrawal/Pinterest-LocalBoard/blob/main/PRIVACY_POLICY.md`
 
 ## Screenshot Assets
 
@@ -69,7 +70,8 @@ Testing flow:
 
 1. Load the unpacked extension from the `extension/` folder or upload the ZIP
    built from that folder.
-2. Open a public Pinterest board page.
+2. Open a public Pinterest board page, or a private board that the signed-in
+   Pinterest account can already view.
 3. Click the extension action.
 4. Confirm the popup detects the board.
 5. Click `Download ZIP`.

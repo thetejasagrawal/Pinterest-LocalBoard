@@ -15,6 +15,10 @@
   const DOWNLOAD_HISTORY_STORAGE_KEY = "localBoardDownloadHistory";
   const LEGACY_DOWNLOAD_HISTORY_STORAGE_KEY = "downloadHistory";
   const MAX_DOWNLOAD_HISTORY_ITEMS = 20;
+  const MAX_FOLDER_NAME_LENGTH = 48;
+  const MAX_ARCHIVE_BASE_NAME_LENGTH = 72;
+  const MAX_IMAGE_FILENAME_LENGTH = 120;
+  const MAX_IMAGE_TITLE_LENGTH = 64;
   const RESERVED_PATH_SEGMENTS = new Set([
     "",
     "pin",
@@ -826,8 +830,14 @@
     }
 
     const zip = new JSZip();
-    const folderName = sanitizeFileLabel(context.boardName || "board") || "board";
-    const archiveBaseName = `${folderName}_localboard`;
+    const folderName = sanitizeFileLabel(
+      context.boardName || "board",
+      MAX_FOLDER_NAME_LENGTH
+    ) || "board";
+    const archiveBaseName = truncateFileLabel(
+      `${folderName}_localboard`,
+      MAX_ARCHIVE_BASE_NAME_LENGTH
+    );
     const folder = zip.folder(folderName);
 
     const concurrency = Math.min(4, Math.max(2, navigator.hardwareConcurrency || 4));
@@ -842,15 +852,9 @@
         assertNotCancelled();
 
         const extension = pickFileExtension(response.url, response.blob.type);
-        const basename = [
-          String(index + 1).padStart(String(records.length).length, "0"),
-          record.pinId,
-          record.title || record.alt || "image"
-        ]
-          .filter(Boolean)
-          .join("_");
+        const filename = buildImageFilename(record, index, records.length, extension);
 
-        folder.file(`${basename}${extension}`, response.blob);
+        folder.file(filename, response.blob);
         downloaded += 1;
       } catch (error) {
         failed += 1;
@@ -956,20 +960,7 @@
 
       for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
         try {
-          const response = await fetchWithTimeout(candidate, 30000, runSignal);
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-          }
-
-          const blob = await response.blob();
-          if (!blob.type.startsWith("image/")) {
-            throw new Error(`Unexpected content type: ${blob.type || "unknown"}`);
-          }
-          if (blob.size === 0) {
-            throw new Error("Server returned an empty file.");
-          }
-
-          return { blob, url: response.url || candidate };
+          return await fetchImageCandidate(candidate, runSignal);
         } catch (error) {
           if (error instanceof CancelledError) throw error;
           errors.push(`${candidate} (attempt ${attempt}): ${error.message}`);
@@ -989,7 +980,63 @@
     );
   }
 
-  async function fetchWithTimeout(url, timeoutMs, runSignal) {
+  async function fetchImageCandidate(url, runSignal) {
+    try {
+      return await fetchImageCandidateWithCredentials(url, runSignal, "omit");
+    } catch (error) {
+      if (error instanceof CancelledError) {
+        throw error;
+      }
+
+      if (!shouldTryCredentialedFetch(error)) {
+        throw error;
+      }
+
+      try {
+        return await fetchImageCandidateWithCredentials(url, runSignal, "include");
+      } catch (credentialedError) {
+        if (credentialedError instanceof CancelledError) {
+          throw credentialedError;
+        }
+
+        throw new Error(
+          `${error.message}; authenticated retry failed: ${credentialedError.message}`
+        );
+      }
+    }
+  }
+
+  async function fetchImageCandidateWithCredentials(url, runSignal, credentials) {
+    const response = await fetchWithTimeout(url, 30000, runSignal, credentials);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const blob = await response.blob();
+    if (!blob.type.startsWith("image/")) {
+      throw new Error(`Unexpected content type: ${blob.type || "unknown"}`);
+    }
+    if (blob.size === 0) {
+      throw new Error("Server returned an empty file.");
+    }
+
+    return { blob, url: response.url || url };
+  }
+
+  function shouldTryCredentialedFetch(error) {
+    const message = error?.message || "";
+    const name = error?.name || "";
+    return (
+      name === "TypeError" ||
+      message.includes("HTTP 401") ||
+      message.includes("HTTP 403") ||
+      message.includes("Failed to fetch") ||
+      message.includes("NetworkError") ||
+      message.includes("network error")
+    );
+  }
+
+  async function fetchWithTimeout(url, timeoutMs, runSignal, credentials = "omit") {
     const controller = new AbortController();
     const timer = window.setTimeout(() => controller.abort(), timeoutMs);
 
@@ -1000,7 +1047,7 @@
       return await fetch(url, {
         signal: controller.signal,
         cache: "no-store",
-        credentials: "omit"
+        credentials
       });
     } finally {
       window.clearTimeout(timer);
@@ -1141,18 +1188,47 @@
     return [];
   }
 
-  function sanitizeFileLabel(value) {
+  function buildImageFilename(record, index, totalCount, extension) {
+    const sequence = String(index + 1).padStart(String(totalCount).length, "0");
+    const pinId = sanitizeFileLabel(record.pinId, 32);
+    const rawTitle = record.title || record.alt || "image";
+    const title = sanitizeFileLabel(rawTitle, MAX_IMAGE_TITLE_LENGTH) || "image";
+    const prefix = [sequence, pinId].filter(Boolean).join("_");
+    const maxBasenameLength = Math.max(
+      prefix.length + 8,
+      MAX_IMAGE_FILENAME_LENGTH - extension.length
+    );
+    const titleBudget = Math.max(8, maxBasenameLength - prefix.length - 1);
+    const basename = [prefix, truncateFileLabel(title, titleBudget)]
+      .filter(Boolean)
+      .join("_");
+
+    return `${truncateFileLabel(basename, maxBasenameLength)}${extension}`;
+  }
+
+  function sanitizeFileLabel(value, maxLength = 80) {
     if (!value) {
       return "";
     }
 
-    return String(value)
+    const label = String(value)
       .normalize("NFKD")
       .replace(/[^\w\s-]/g, "")
       .trim()
       .replace(/[\s_-]+/g, "_")
       .replace(/^_+|_+$/g, "")
-      .slice(0, 80);
+      .slice(0, maxLength);
+
+    return label.replace(/_+$/g, "");
+  }
+
+  function truncateFileLabel(value, maxLength) {
+    const label = String(value || "").replace(/_+$/g, "");
+    if (label.length <= maxLength) {
+      return label;
+    }
+
+    return label.slice(0, maxLength).replace(/_+$/g, "");
   }
 
   function buildScanMessage(collected, expected) {

@@ -9,15 +9,15 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/txtgrey/Pinterest-LocalBoard/actions/workflows/validate.yml">
-    <img src="https://github.com/txtgrey/Pinterest-LocalBoard/actions/workflows/validate.yml/badge.svg" alt="Validate workflow">
+  <a href="https://github.com/thetejasagrawal/Pinterest-LocalBoard/actions/workflows/validate.yml">
+    <img src="https://github.com/thetejasagrawal/Pinterest-LocalBoard/actions/workflows/validate.yml/badge.svg" alt="Validate workflow">
   </a>
   <a href="LICENSE">
-    <img src="https://img.shields.io/github/license/txtgrey/Pinterest-LocalBoard?style=flat-square" alt="License">
+    <img src="https://img.shields.io/github/license/thetejasagrawal/Pinterest-LocalBoard?style=flat-square" alt="License">
   </a>
   <img src="https://img.shields.io/badge/manifest-v3-black?style=flat-square" alt="Manifest V3">
   <img src="https://img.shields.io/badge/privacy-local%20only-111827?style=flat-square" alt="Privacy local only">
-  <a href="https://chromewebstore.google.com/detail/pinterest-localboard/">
+  <a href="https://chromewebstore.google.com/detail/pinterest-localboard/ffalngabgmaancacaigapmkkaoalaama">
     <img src="https://img.shields.io/badge/Chrome%20Web%20Store-available-4285F4?style=flat-square&logo=googlechrome&logoColor=white" alt="Available on Chrome Web Store">
   </a>
 </p>
@@ -46,13 +46,10 @@ page exposes, downloads what it can, and packages the results into one archive.
 
 ## Quick Start
 
-1. Clone or download this repository.
-2. Open `chrome://extensions` in Chrome.
-3. Enable `Developer mode`.
-4. Click `Load unpacked`.
-5. Select the [`extension/`](extension) folder.
-6. Open a Pinterest board your current session can access.
-7. Click `Pinterest LocalBoard` and press `Download ZIP`.
+1. Install from the
+   [Chrome Web Store](https://chromewebstore.google.com/detail/pinterest-localboard/ffalngabgmaancacaigapmkkaoalaama).
+2. Open a Pinterest board your current session can access.
+3. Click `Pinterest LocalBoard` and press `Download ZIP`.
 
 ## Features
 
@@ -60,6 +57,7 @@ page exposes, downloads what it can, and packages the results into one archive.
 | --- | --- |
 | Board detection | Detects Pinterest board pages from the active tab and re-checks when Pinterest changes the URL without a full page reload. |
 | Full-quality image capture | Prefers the best `i.pinimg.com` image candidate available, including `originals` when Pinterest exposes it. |
+| Signed-in board support | Works with public boards and private boards your current Pinterest session can view. |
 | One-click ZIP export | Downloads collected images and bundles them into a single ZIP file locally in the browser. |
 | Recovery-aware workflow | Retries image downloads, tolerates partial failures, and still completes the ZIP when possible. |
 | Failure reporting | Writes `_download_report.json` into the ZIP with scan details and failed items. |
@@ -79,7 +77,29 @@ and resilient enough for real use.
 
 ## Installation
 
-### Load As An Unpacked Extension
+### Recommended
+
+Install from the Chrome Web Store:
+
+**[Install Pinterest LocalBoard](https://chromewebstore.google.com/detail/pinterest-localboard/ffalngabgmaancacaigapmkkaoalaama)**
+
+### Download From GitHub
+
+Prefer GitHub if you want to inspect the extension files or install a specific
+release manually:
+
+1. Download the latest ZIP from
+   [GitHub Releases](https://github.com/thetejasagrawal/Pinterest-LocalBoard/releases/latest).
+2. Unzip the file.
+3. Open `chrome://extensions` in Chrome.
+4. Enable `Developer mode`.
+5. Click `Load unpacked`.
+6. Select the unzipped folder.
+
+Direct ZIP for this release:
+[`pinterest-localboard-v1.4.0-chrome-web-store.zip`](https://github.com/thetejasagrawal/Pinterest-LocalBoard/releases/latest/download/pinterest-localboard-v1.4.0-chrome-web-store.zip)
+
+### Load From Source
 
 1. Open Chrome.
 2. Go to `chrome://extensions`.
@@ -105,6 +125,8 @@ and resilient enough for real use.
 ### Best Results
 
 - Open the actual board feed, not an individual pin page.
+- For private boards, make sure you are signed into the Pinterest account that
+  can view the board before starting the download.
 - If Pinterest is showing section tiles instead of pins, open `All Pins` or a
   specific section with visible pin tiles.
 - For very large boards, give the page a moment to settle before starting.
@@ -180,6 +202,8 @@ The report file includes:
 
 ## Limitations
 
+- Pinterest LocalBoard can download private boards only when your signed-in
+  Pinterest session can already view them.
 - Pinterest LocalBoard does not bypass private-board permissions.
 - It depends on Pinterest's current DOM and client-side data exposure.
 - Extremely large boards can still hit browser memory limits because ZIP
@@ -230,7 +254,7 @@ The report file includes:
 
 Pinterest LocalBoard is available on the Chrome Web Store — no developer mode required:
 
-**[→ Install from the Chrome Web Store](https://chromewebstore.google.com/detail/pinterest-localboard/)**
+**[Install from the Chrome Web Store](https://chromewebstore.google.com/detail/pinterest-localboard/ffalngabgmaancacaigapmkkaoalaama)**
 
 The repository also includes Chrome Web Store submission materials:
 
@@ -288,7 +312,6 @@ For contribution and validation expectations, see
 - Stronger recovery for very large boards
 - Optional background-worker architecture for longer-running jobs
 - Better reporting for skipped pins and selector mismatches
-- Future packaging for easier distribution beyond unpacked installs
 
 ## License
 

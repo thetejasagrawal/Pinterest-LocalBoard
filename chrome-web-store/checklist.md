@@ -19,9 +19,9 @@
 ## Privacy / Support
 
 - Privacy policy URL:
-  `https://github.com/txtgrey/Pinterest-LocalBoard/blob/main/PRIVACY_POLICY.md`
+  `https://github.com/thetejasagrawal/Pinterest-LocalBoard/blob/main/PRIVACY_POLICY.md`
 - Support URL:
-  `https://github.com/txtgrey/Pinterest-LocalBoard/blob/main/SUPPORT.md`
+  `https://github.com/thetejasagrawal/Pinterest-LocalBoard/blob/main/SUPPORT.md`
 
 ## Privacy Practices Tab
 
@@ -39,6 +39,8 @@
 
 - Confirm the extension still loads as unpacked
 - Confirm a public Pinterest board downloads successfully
+- Confirm a private board downloads successfully when the browser is signed into
+  an account with access
 - Confirm `_download_report.json` is included when some items fail
 - Confirm recent download history updates in the popup
 - Confirm the screenshots match the current UI and branding

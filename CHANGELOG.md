@@ -7,6 +7,17 @@ manual versioning flow until formal releases are added.
 
 ## [Unreleased]
 
+### Fixed
+
+- Capped generated folder, archive, and image filenames so long pin titles or
+  alt text cannot create ZIP entries that are hard to open or move.
+
+### Improved
+
+- Added an authenticated image-fetch retry path for boards visible to the
+  user's signed-in Pinterest session, including private boards the user can
+  already access.
+
 ### Changed
 
 - Rebranded the extension and repo name to `Pinterest LocalBoard`
