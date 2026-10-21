@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LocalBoard v3 store assets</title>
+    <link rel="stylesheet" href="render.css" />
+  </head>
+  <body>
+    <main class="canvas">
+      <section class="asset screenshot screenshot-hero">
+        <img class="scene-bg" src="../../assets/v3/sources/hero-laptop-graphite.png" alt="" />
+        <span class="hero-label"><b>LOCALBOARD</b><i></i><span>BOARD READY</span></span>
+        <img class="popup-on-laptop" src="../../assets/v3/sources/popup-ready.png" alt="LocalBoard ready screen" />
+      </section>
+
+      <section class="asset screenshot screenshot-ready">
+        <img class="scene-bg" src="../../assets/v3/sources/product-browser-graphite.png" alt="" />
+        <img class="popup-on-browser ready-popup" src="../../assets/v3/sources/popup-ready.png" alt="LocalBoard ready screen" />
+        <span class="frame-label">01 / BOARD READY</span>
+      </section>
+
+      <section class="asset screenshot screenshot-progress">
+        <img class="scene-bg" src="../../assets/v3/sources/product-browser-graphite.png" alt="" />
+        <img class="popup-on-browser progress-popup" src="../../assets/v3/sources/popup-progress.png" alt="LocalBoard Smart parts progress" />
+        <span class="frame-label">02 / SMART PARTS</span>
+      </section>
+
+      <section class="asset screenshot screenshot-selection">
+        <img class="scene-bg" src="../../assets/v3/sources/selection-browser-graphite.png" alt="" />
+        <span class="selection-check c1">✓</span>
+        <span class="selection-check c2">✓</span>
+        <span class="selection-check c3">✓</span>
+        <span class="selection-check c4">✓</span>
+        <span class="selection-check c5">✓</span>
+        <div class="selection-bar">
+          <span class="selection-info">
+            <img src="../../../extension/assets/localboard-logo.png" alt="" />
+            <strong><em>5</em> selected</strong>
+          </span>
+          <span class="selection-actions">
+            <button>Whole board</button>
+            <button class="primary">Export selected</button>
+          </span>
+        </div>
+        <span class="frame-label">03 / SELECT PINS</span>
+      </section>
+
+      <section class="asset screenshot screenshot-complete">
+        <img class="scene-bg" src="../../assets/v3/sources/product-browser-graphite.png" alt="" />
+        <img class="popup-on-browser complete-popup" src="../../assets/v3/sources/popup-complete.png" alt="LocalBoard completed export" />
+        <span class="frame-label">04 / EXPORT COMPLETE</span>
+      </section>
+
+      <section class="asset promo-small">
+        <img class="small-photo" src="../../assets/v3/sources/selection-browser-graphite.png" alt="" />
+        <div class="small-shade"></div>
+        <div class="small-copy">
+          <div class="brand-lockup small-brand">
+            <img src="../../../extension/assets/localboard-logo.png" alt="" />
+            <strong>LocalBoard</strong>
+          </div>
+          <h1>Save boards<br />locally.</h1>
+        </div>
+      </section>
+
+      <section class="asset promo-marquee">
+        <div class="marquee-copy">
+          <div class="brand-lockup marquee-brand">
+            <img src="../../../extension/assets/localboard-logo.png" alt="" />
+            <strong>LocalBoard</strong>
+          </div>
+          <p class="eyebrow">PINTEREST BOARD EXPORTER</p>
+          <h1>Boards, beautifully offline.</h1>
+          <p class="marquee-sub">Original-quality images. One ZIP or memory-safe parts. Always local.</p>
+        </div>
+        <div class="marquee-photo">
+          <img src="../../assets/v3/sources/hero-laptop-graphite.png" alt="" />
+        </div>
+        <img class="marquee-popup" src="../../assets/v3/sources/popup-ready.png" alt="LocalBoard ready screen" />
+      </section>
+    </main>
+    <script>
+      document.body.dataset.asset =
+        new URLSearchParams(location.search).get("asset") || "screenshot-hero";
+    </script>
+  </body>
+</html>

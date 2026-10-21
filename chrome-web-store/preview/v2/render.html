@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LocalBoard v2 store asset</title>
+    <link rel="stylesheet" href="render.css" />
+  </head>
+  <body>
+    <main id="canvas" class="canvas">
+      <section class="asset screenshot screenshot-macbook">
+        <img class="scene-bg" src="../../assets/v2/sources/macbook-neutral-studio.png" alt="" />
+        <img class="popup-on-laptop" src="../../assets/v2/sources/popup-ready.png" alt="LocalBoard ready screen" />
+      </section>
+
+      <section class="asset screenshot screenshot-ready">
+        <img class="scene-bg" src="../../assets/v2/sources/interior-board-browser.png" alt="" />
+        <img class="popup-on-browser ready-popup" src="../../assets/v2/sources/popup-ready.png" alt="LocalBoard ready screen" />
+      </section>
+
+      <section class="asset screenshot screenshot-progress">
+        <img class="scene-bg" src="../../assets/v2/sources/interior-board-browser.png" alt="" />
+        <img class="popup-on-browser progress-popup" src="../../assets/v2/sources/popup-progress.png" alt="LocalBoard saving progress screen" />
+      </section>
+
+      <section class="asset screenshot screenshot-selection">
+        <img class="scene-bg" src="../../assets/v2/sources/creative-board-browser.png" alt="" />
+        <span class="selection-check c1">✓</span>
+        <span class="selection-check c2">✓</span>
+        <span class="selection-check c3">✓</span>
+        <span class="selection-check c4">✓</span>
+        <span class="selection-check c5">✓</span>
+        <div class="selection-bar">
+          <span class="selection-info">
+            <img src="../../../extension/assets/localboard-logo.png" alt="" />
+            <strong>5 selected</strong>
+          </span>
+          <span class="selection-actions"><button>Exit</button><button class="primary">Export selected</button></span>
+        </div>
+      </section>
+
+      <section class="asset screenshot screenshot-complete">
+        <img class="scene-bg" src="../../assets/v2/sources/interior-board-browser.png" alt="" />
+        <img class="popup-on-browser complete-direct" src="../../assets/v2/sources/popup-complete.png" alt="LocalBoard completed screen" />
+      </section>
+
+      <section class="asset promo-small">
+        <div class="promo-photo"><img src="../../assets/v2/sources/macbook-neutral-studio.png" alt="" /></div>
+        <div class="small-copy">
+          <div class="brand-lockup small-brand">
+            <img src="../../../extension/assets/localboard-logo.png" alt="" />
+            <strong>LocalBoard</strong>
+          </div>
+          <p>Reliable exports for large Pinterest boards.</p>
+        </div>
+      </section>
+
+      <section class="asset promo-marquee">
+        <div class="marquee-copy">
+          <div class="brand-lockup marquee-brand">
+            <img src="../../../extension/assets/localboard-logo.png" alt="" />
+            <strong>LocalBoard</strong>
+          </div>
+          <h1>Reliable board exports.</h1>
+          <p>Single ZIP or memory-safe parts. Everything stays local.</p>
+        </div>
+        <div class="marquee-photo"><img src="../../assets/v2/sources/macbook-neutral-studio.png" alt="" /></div>
+        <img class="marquee-popup" src="../../assets/v2/sources/popup-ready.png" alt="LocalBoard ready screen" />
+      </section>
+    </main>
+    <script>
+      const asset = new URLSearchParams(location.search).get("asset") || "screenshot-macbook";
+      document.body.dataset.asset = asset;
+    </script>
+  </body>
+</html>

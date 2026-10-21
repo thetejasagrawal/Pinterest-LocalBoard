@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LocalBoard v5 exact browser screenshots</title>
+    <link rel="stylesheet" href="render.css" />
+  </head>
+  <body>
+    <main class="canvas">
+      <section class="asset screenshot screenshot-hero">
+        <div class="hero-stage">
+          <img class="scene-bg" src="../../assets/v3/sources/hero-laptop-graphite.png" alt="" />
+        </div>
+        <div class="popup-surface hero-popup">
+          <iframe src="../../../extension/popup.html?preview=ready" title="LocalBoard ready screen"></iframe>
+        </div>
+      </section>
+
+      <section class="asset screenshot screenshot-ready">
+        <div class="browser-stage">
+          <img class="scene-bg" src="../../assets/v3/sources/product-browser-graphite.png" alt="" />
+        </div>
+        <div class="popup-surface browser-popup ready-popup">
+          <iframe src="../../../extension/popup.html?preview=ready" title="LocalBoard ready screen"></iframe>
+        </div>
+      </section>
+
+      <section class="asset screenshot screenshot-progress">
+        <div class="browser-stage">
+          <img class="scene-bg" src="../../assets/v3/sources/product-browser-graphite.png" alt="" />
+        </div>
+        <div class="popup-surface browser-popup limited-popup">
+          <iframe src="../../../extension/popup.html?preview=progress" title="LocalBoard Smart parts progress"></iframe>
+        </div>
+      </section>
+
+      <section class="asset screenshot screenshot-selection">
+        <img class="selection-reference" src="../../assets/v4/final/04-selection-closeup-1280x800.png" alt="LocalBoard pin selection mode" />
+      </section>
+
+      <section class="asset screenshot screenshot-complete">
+        <div class="browser-stage">
+          <img class="scene-bg" src="../../assets/v3/sources/product-browser-graphite.png" alt="" />
+        </div>
+        <div class="popup-surface browser-popup limited-popup">
+          <iframe src="../../../extension/popup.html?preview=done" title="LocalBoard completed export"></iframe>
+        </div>
+      </section>
+    </main>
+    <script>
+      document.body.dataset.asset =
+        new URLSearchParams(location.search).get("asset") || "screenshot-hero";
+    </script>
+  </body>
+</html>

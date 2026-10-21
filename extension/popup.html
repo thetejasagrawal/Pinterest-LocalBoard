@@ -3,117 +3,141 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Pinterest LocalBoard</title>
+    <title>LocalBoard</title>
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
     <main class="app">
-
       <header class="top-bar">
-        <span class="brand">
-          <svg class="brand-icon" viewBox="0 0 16 16" aria-hidden="true">
-            <circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.3"/>
-            <circle cx="8" cy="8" r="2.6" fill="currentColor"/>
-          </svg>
+        <span class="brand" aria-label="LocalBoard">
+          <img class="brand-logo" src="assets/localboard-logo.png" alt="" />
           <span class="brand-name">LocalBoard</span>
         </span>
         <span id="statusPill" class="pill">
           <span class="pill-dot"></span>
-          <span id="statusPillText" class="pill-text">Idle</span>
+          <span id="statusPillText" class="pill-text">Ready</span>
         </span>
       </header>
 
-      <section class="board-section">
-        <h1 id="boardName" class="board-name">Waiting for a board…</h1>
-        <p id="boardMeta" class="board-meta"></p>
+      <section class="board-section" aria-labelledby="boardName">
+        <div class="board-heading-row">
+          <div class="board-copy">
+            <h1 id="boardName" class="board-name">Waiting for a board…</h1>
+            <p id="boardMeta" class="board-meta"></p>
+          </div>
+          <button id="selectButton" class="quiet-action" type="button">Select pins</button>
+        </div>
         <p id="boardUrl" class="board-url"></p>
         <p id="boardWarning" class="board-warning hidden"></p>
       </section>
 
-      <div class="divider"></div>
+      <section id="setupSection" class="setup-section">
+        <aside id="largeBoardNotice" class="large-board-notice hidden">
+          <span class="notice-mark" aria-hidden="true">!</span>
+          <span>
+            <strong>Large board detected</strong>
+            <small>Smart parts keeps memory use steady and is easier to resume.</small>
+          </span>
+        </aside>
 
-      <section id="progressSection" class="progress-section hidden">
-        <div class="progress-bar-shell">
-          <div id="progressFill" class="progress-fill"></div>
-        </div>
-        <div class="progress-row">
+        <fieldset id="exportModeGroup" class="export-modes">
+          <legend class="sr-only">Choose export format</legend>
+          <label class="mode-card" data-mode-card="single">
+            <input id="singleMode" type="radio" name="exportMode" value="single" />
+            <span class="radio-mark" aria-hidden="true"></span>
+            <span class="mode-copy">
+              <strong>Single ZIP</strong>
+              <small>One file for smaller boards</small>
+            </span>
+          </label>
+          <label class="mode-card" data-mode-card="parts">
+            <input id="partsMode" type="radio" name="exportMode" value="parts" />
+            <span class="radio-mark" aria-hidden="true"></span>
+            <span class="mode-copy">
+              <strong>Smart parts</strong>
+              <small>Up to 250 pins per ZIP</small>
+            </span>
+            <span id="modeRecommendation" class="recommended">Recommended</span>
+          </label>
+        </fieldset>
+
+        <ol id="workflowSteps" class="workflow" aria-label="Export steps">
+          <li data-step="scan" class="is-current">
+            <span class="step-number">1</span>
+            <span><strong>Scan</strong><small>Find every pin</small></span>
+          </li>
+          <li data-step="save">
+            <span class="step-number">2</span>
+            <span><strong>Save</strong><small>Fetch originals</small></span>
+          </li>
+          <li data-step="pack">
+            <span class="step-number">3</span>
+            <span><strong>Pack</strong><small>Build local ZIP</small></span>
+          </li>
+        </ol>
+      </section>
+
+      <section id="progressSection" class="progress-section hidden" aria-live="polite">
+        <div class="progress-heading">
           <span id="statusMsg" class="status-msg">Ready.</span>
           <span id="progressPct" class="progress-pct">0%</span>
+        </div>
+        <div class="progress-bar-shell">
+          <div id="progressFill" class="progress-fill"></div>
         </div>
         <div class="stats-row">
           <span id="statExpected" class="stat">— expected</span>
           <span class="stat-dot">·</span>
-          <span id="statCollected" class="stat">0 collected</span>
+          <span id="statCollected" class="stat">0 found</span>
           <span class="stat-dot">·</span>
           <span id="statDownloaded" class="stat">0 saved</span>
         </div>
         <p id="warningLine" class="inline-warning hidden"></p>
       </section>
 
-      <section id="selectionSection" class="selection-section hidden">
-        <div class="selection-badge">
-          <svg class="sel-icon" viewBox="0 0 16 16" aria-hidden="true">
-            <circle cx="8" cy="8" r="7" fill="currentColor" opacity="0.12"/>
-            <circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.4"/>
-            <path d="M5 8.2l2.2 2.2 3.8-4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-          </svg>
+      <section id="selectionSection" class="selection-section hidden" aria-live="polite">
+        <span class="selection-count-wrap">
           <span id="selectionCount" class="sel-count">0 pins selected</span>
-        </div>
-        <p class="sel-hint">Click pins on the board page to pick them.</p>
+          <small>Click pins on the Pinterest page to choose them.</small>
+        </span>
       </section>
 
       <footer class="actions">
-        <div id="idleActions" class="action-pair">
-          <button id="selectButton" class="btn btn-secondary" type="button">
-            <svg viewBox="0 0 16 16" class="btn-icon" aria-hidden="true">
-              <rect x="2.5" y="2.5" width="11" height="11" rx="2.2" fill="none" stroke="currentColor" stroke-width="1.4"/>
-              <path d="M5.4 8.3l1.9 1.9 3.5-3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-            </svg>
-            <span>Select</span>
-          </button>
+        <div id="idleActions" class="idle-actions">
           <button id="startButton" class="btn btn-primary" type="button" disabled>
-            <svg viewBox="0 0 16 16" class="btn-icon" aria-hidden="true">
-              <path d="M8 2.5v7.6m0 0l2.6-2.6M8 10.1L5.4 7.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-              <path d="M3.2 12.5v.4a1 1 0 001 1h7.6a1 1 0 001-1v-.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none"/>
-            </svg>
-            <span>Download All</span>
+            <span>Start export</span>
           </button>
         </div>
         <div id="selectionActions" class="action-pair hidden">
-          <button id="exitSelectionButton" class="btn btn-secondary" type="button">
-            <span>Exit</span>
-          </button>
-          <button id="downloadSelectedButton" class="btn btn-primary" type="button" disabled>
-            <svg viewBox="0 0 16 16" class="btn-icon" aria-hidden="true">
-              <path d="M8 2.5v7.6m0 0l2.6-2.6M8 10.1L5.4 7.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-              <path d="M3.2 12.5v.4a1 1 0 001 1h7.6a1 1 0 001-1v-.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none"/>
-            </svg>
-            <span>Download</span>
-          </button>
+          <button id="exitSelectionButton" class="btn btn-secondary" type="button">Whole board</button>
+          <button id="downloadSelectedButton" class="btn btn-primary" type="button" disabled>Export selected</button>
         </div>
-        <button id="cancelButton" class="btn btn-cancel hidden" type="button">Cancel</button>
+        <button id="cancelButton" class="btn btn-cancel hidden" type="button">Cancel export</button>
+        <div class="privacy-note"><strong>Local only</strong><span>Never leaves your device</span></div>
       </footer>
 
-      <div class="divider"></div>
-
-      <section class="history-section">
-        <div class="history-header">
-          <span class="section-label">Recent</span>
-          <button id="clearHistoryButton" class="text-btn" type="button">Clear</button>
-        </div>
-        <div id="historyList" class="history-list">
-          <p class="empty-text">No downloads yet.</p>
-        </div>
-      </section>
-
-      <div class="tool-row">
-        <button id="refreshButton" class="text-btn" type="button">Refresh</button>
-        <span class="dot-sep">·</span>
-        <button id="reloadTabButton" class="text-btn" type="button">Reload Tab</button>
-        <span class="dot-sep">·</span>
-        <button id="openBoardButton" class="text-btn" type="button">Open Board</button>
-      </div>
-
+      <details id="historyDisclosure" class="history-disclosure">
+        <summary>
+          <span class="history-title"><span class="history-clock" aria-hidden="true"></span>Recent downloads</span>
+          <span class="chevron" aria-hidden="true"></span>
+        </summary>
+        <section class="history-section">
+          <div class="history-header">
+            <span class="section-label">Saved locally</span>
+            <button id="clearHistoryButton" class="text-btn" type="button">Clear</button>
+          </div>
+          <div id="historyList" class="history-list">
+            <p class="empty-text">No downloads yet.</p>
+          </div>
+          <div class="tool-row">
+            <button id="refreshButton" class="text-btn" type="button">Refresh</button>
+            <span class="dot-sep">·</span>
+            <button id="reloadTabButton" class="text-btn" type="button">Reload tab</button>
+            <span class="dot-sep">·</span>
+            <button id="openBoardButton" class="text-btn" type="button">Open board</button>
+          </div>
+        </section>
+      </details>
     </main>
     <script src="popup.js"></script>
   </body>

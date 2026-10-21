@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Large Board Regression Fixture</title>
+  </head>
+  <body>
+    <h1>Large Board Regression Fixture</h1>
+    <pre id="result">running</pre>
+    <script>
+      const testDownloads = [];
+      const testStorage = {};
+      const resumeMode = new URLSearchParams(location.search).get("resume") || "";
+      const resumeFixture = resumeMode === "1";
+      const resumeMismatchFixture = resumeMode === "mismatch";
+      let contentMessageListener = null;
+
+      globalThis.chrome = {
+        runtime: {
+          onMessage: {
+            addListener(listener) { contentMessageListener = listener; },
+          },
+          sendMessage() { return Promise.resolve({ ok: true }); },
+          getURL(path) { return `/extension/${path}`; },
+        },
+        storage: {
+          local: {
+            get(keys) {
+              const requested = Array.isArray(keys) ? keys : [keys];
+              return Promise.resolve(Object.fromEntries(
+                requested
+                  .filter((key) => Object.hasOwn(testStorage, key))
+                  .map((key) => [key, testStorage[key]])
+              ));
+            },
+            set(values) {
+              Object.assign(testStorage, values);
+              return Promise.resolve();
+            },
+            remove(keys) {
+              for (const key of Array.isArray(keys) ? keys : [keys]) delete testStorage[key];
+              return Promise.resolve();
+            },
+          },
+        },
+      };
+
+      globalThis.fetch = async (url) => {
+        const blob = new Blob([new Uint8Array([255, 216, 255, 217])], { type: "image/jpeg" });
+        return new Response(blob, { status: 200, headers: { "Content-Type": "image/jpeg" } });
+      };
+
+      HTMLAnchorElement.prototype.click = function click() {
+        testDownloads.push(this.download);
+      };
+
+      const initialProps = document.createElement("script");
+      initialProps.id = "__PWS_INITIAL_PROPS__";
+      initialProps.type = "application/json";
+      initialProps.textContent = JSON.stringify({
+        initialReduxState: {
+          boards: {
+            fixture: {
+              id: "fixture-board",
+              name: "Fixture Board",
+              url: "/qa/tester/board/",
+              pin_count: 1025,
+              section_count: 0,
+              owner: { username: "fixture" },
+            },
+          },
+          pins: {},
+        },
+      });
+      document.head.appendChild(initialProps);
+
+      const fragment = document.createDocumentFragment();
+      for (let index = 1; index <= 1025; index += 1) {
+        const pin = document.createElement("article");
+        pin.dataset.testId = "pin";
+        pin.dataset.testPinId = String(index);
+        pin.innerHTML = `
+          <a href="/pin/${index}/" aria-label="Fixture ${index}">
+            <img src="https://i.pinimg.com/1200x/fixture/${index}.jpg" alt="Fixture ${index}" />
+          </a>
+        `;
+        fragment.appendChild(pin);
+      }
+      document.body.appendChild(fragment);
+
+      function sendContentMessage(message) {
+        return new Promise((resolve, reject) => {
+          if (!contentMessageListener) {
+            reject(new Error("content listener missing"));
+            return;
+          }
+          contentMessageListener(message, {}, resolve);
+        });
+      }
+    </script>
+    <script src="../../../extension/vendor/jszip.min.js"></script>
+    <script src="../../../extension/content.js"></script>
+    <script>
+      (async () => {
+        try {
+          if (resumeFixture || resumeMismatchFixture) {
+            const identityPayload = JSON.stringify({
+              version: 2,
+              boardUrl: location.href,
+              exportScope: "board",
+              pinIds: Array.from({ length: 1025 }, (_, index) => String(index + 1)),
+            });
+            const digest = await crypto.subtle.digest(
+              "SHA-256",
+              new TextEncoder().encode(identityPayload)
+            );
+            const fingerprint = [...new Uint8Array(digest)]
+              .map((byte) => byte.toString(16).padStart(2, "0"))
+              .join("");
+            testStorage.localBoardResumeCheckpoint = {
+              version: 2,
+              boardId: "fixture-board",
+              boardUrl: location.href,
+              exportScope: "board",
+              fingerprint: resumeMismatchFixture ? `mismatch-${fingerprint}` : fingerprint,
+              exportMode: "parts",
+              recordCount: 1025,
+              partCount: 5,
+              completedParts: 2,
+              downloaded: 500,
+              failed: 0,
+              updatedAt: Date.now(),
+            };
+          }
+
+          const context = await sendContentMessage({ type: "GET_CONTEXT" });
+          const start = await sendContentMessage({
+            type: "START_DOWNLOAD",
+            exportMode: "parts",
+          });
+          if (!context.ok || !start.ok) throw new Error("fixture could not start");
+
+          const deadline = Date.now() + 20_000;
+          let status = await sendContentMessage({ type: "GET_STATUS" });
+          while (!["done", "error"].includes(status.stage) && Date.now() < deadline) {
+            await new Promise((resolve) => setTimeout(resolve, 50));
+            status = await sendContentMessage({ type: "GET_STATUS" });
+          }
+
+          const expectedDownloads = resumeFixture ? 3 : 5;
+          const expectedFirstPart = resumeFixture ? "part-3-of-5" : "part-1-of-5";
+          const passed =
+            status.stage === "done" &&
+            status.collected === 1025 &&
+            status.downloaded === 1025 &&
+            status.failed === 0 &&
+            status.partCount === 5 &&
+            status.partsCompleted === 5 &&
+            testDownloads.length === expectedDownloads &&
+            testDownloads[0].includes(expectedFirstPart) &&
+            testDownloads[testDownloads.length - 1].includes("part-5-of-5") &&
+            !Object.hasOwn(testStorage, "localBoardResumeCheckpoint");
+
+          const result = {
+            passed,
+            resumeFixture,
+            resumeMismatchFixture,
+            context,
+            status,
+            downloads: testDownloads,
+          };
+          document.body.dataset.testResult = passed ? "passed" : "failed";
+          document.getElementById("result").textContent = JSON.stringify(result, null, 2);
+        } catch (error) {
+          document.body.dataset.testResult = "failed";
+          document.getElementById("result").textContent = JSON.stringify({
+            passed: false,
+            error: error.message,
+          });
+        }
+      })();
+    </script>
+  </body>
+</html>

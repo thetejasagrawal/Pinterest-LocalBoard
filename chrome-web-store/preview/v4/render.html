@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LocalBoard v4 closeup store assets</title>
+    <link rel="stylesheet" href="render.css" />
+  </head>
+  <body>
+    <main class="canvas">
+      <section class="asset screenshot screenshot-hero">
+        <div class="hero-stage">
+          <img class="scene-bg" src="../../assets/v3/sources/hero-laptop-graphite.png" alt="" />
+          <img class="popup-on-laptop" src="../../assets/v3/sources/popup-ready.png" alt="LocalBoard ready screen" />
+        </div>
+      </section>
+
+      <section class="asset screenshot screenshot-ready">
+        <div class="browser-stage">
+          <img class="scene-bg" src="../../assets/v3/sources/product-browser-graphite.png" alt="" />
+          <img class="popup-on-browser ready-popup" src="../../assets/v3/sources/popup-ready.png" alt="LocalBoard ready screen" />
+        </div>
+      </section>
+
+      <section class="asset screenshot screenshot-progress">
+        <div class="browser-stage">
+          <img class="scene-bg" src="../../assets/v3/sources/product-browser-graphite.png" alt="" />
+          <img class="popup-on-browser progress-popup" src="../../assets/v3/sources/popup-progress.png" alt="LocalBoard Smart parts progress" />
+        </div>
+      </section>
+
+      <section class="asset screenshot screenshot-selection">
+        <div class="selection-stage">
+          <img class="scene-bg" src="../../assets/v3/sources/selection-browser-graphite.png" alt="" />
+          <span class="selection-check c1">✓</span>
+          <span class="selection-check c2">✓</span>
+          <span class="selection-check c3">✓</span>
+          <span class="selection-check c4">✓</span>
+          <span class="selection-check c5">✓</span>
+        </div>
+        <div class="selection-bar">
+          <span class="selection-info">
+            <img src="../../../extension/assets/localboard-logo.png" alt="" />
+            <strong><em>5</em> selected</strong>
+          </span>
+          <span class="selection-actions">
+            <button>Whole board</button>
+            <button class="primary">Export selected</button>
+          </span>
+        </div>
+      </section>
+
+      <section class="asset screenshot screenshot-complete">
+        <div class="browser-stage">
+          <img class="scene-bg" src="../../assets/v3/sources/product-browser-graphite.png" alt="" />
+          <img class="popup-on-browser complete-popup" src="../../assets/v3/sources/popup-complete.png" alt="LocalBoard completed export" />
+        </div>
+      </section>
+    </main>
+    <script>
+      document.body.dataset.asset =
+        new URLSearchParams(location.search).get("asset") || "screenshot-hero";
+    </script>
+  </body>
+</html>

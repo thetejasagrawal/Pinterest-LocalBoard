@@ -1,0 +1,47 @@
+* { box-sizing: border-box; }
+html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #090d14; }
+.canvas { position: relative; width: 100%; height: 100%; overflow: hidden; background: #090d14; }
+.asset { position: absolute; inset: 0; display: none; overflow: hidden; }
+body[data-asset="screenshot-hero"] .screenshot-hero,
+body[data-asset="screenshot-ready"] .screenshot-ready,
+body[data-asset="screenshot-progress"] .screenshot-progress,
+body[data-asset="screenshot-selection"] .screenshot-selection,
+body[data-asset="screenshot-complete"] .screenshot-complete { display: block; }
+
+.hero-stage,
+.browser-stage { position: absolute; inset: 0; }
+.hero-stage { transform: scale(1.32); transform-origin: 53% 45%; }
+.browser-stage { transform: scale(1.17); transform-origin: 50% 50%; }
+.scene-bg,
+.selection-reference { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+.popup-surface {
+  position: absolute;
+  z-index: 4;
+  width: 400px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0 0 14px 14px;
+  background: #fffaf5;
+  box-shadow: 0 24px 56px rgba(3, 8, 17, .34), 0 5px 16px rgba(3, 8, 17, .18);
+}
+.popup-surface iframe {
+  display: block;
+  width: 400px;
+  height: 100%;
+  border: 0;
+  background: #fffaf5;
+}
+.hero-popup {
+  top: 70px;
+  right: 143px;
+  height: 566px;
+  border-radius: 0 0 13px 13px;
+  box-shadow: 0 25px 58px rgba(0,0,0,.40), 0 5px 16px rgba(0,0,0,.22);
+}
+.browser-popup {
+  top: 42px;
+  right: 40px;
+}
+.ready-popup { height: 566px; }
+.limited-popup { height: 600px; }

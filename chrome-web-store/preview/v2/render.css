@@ -1,0 +1,63 @@
+:root {
+  --red: #bd0025;
+  --cream: #fffaf5;
+  --ink: #171516;
+  --muted: #676164;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: var(--cream); }
+.canvas { position: relative; width: 100%; height: 100%; overflow: hidden; background: var(--cream); }
+.asset { position: absolute; inset: 0; display: none; overflow: hidden; }
+body[data-asset="screenshot-macbook"] .screenshot-macbook,
+body[data-asset="screenshot-ready"] .screenshot-ready,
+body[data-asset="screenshot-progress"] .screenshot-progress,
+body[data-asset="screenshot-selection"] .screenshot-selection,
+body[data-asset="screenshot-complete"] .screenshot-complete,
+body[data-asset="promo-small"] .promo-small,
+body[data-asset="promo-marquee"] .promo-marquee { display: block; }
+
+.scene-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.brand-lockup { display: flex; align-items: center; gap: 14px; }
+.brand-lockup img { width: 58px; height: 58px; border-radius: 17px; box-shadow: 0 9px 24px rgba(20, 24, 31, .22); }
+.brand-lockup strong { font-family: ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", sans-serif; font-size: 32px; letter-spacing: -.05em; }
+.popup-on-laptop { position: absolute; z-index: 3; top: 130px; left: 742px; width: 260px; border-radius: 12px; box-shadow: 0 12px 28px rgba(18, 18, 18, .18); }
+
+.feature-chip { position: absolute; z-index: 2; top: 89px; left: 85px; display: flex; align-items: center; gap: 10px; border: 1px solid rgba(102, 75, 61, .16); border-radius: 999px; background: rgba(255, 250, 245, .94); box-shadow: 0 10px 26px rgba(53, 32, 23, .12); color: var(--red); padding: 11px 15px; font-size: 14px; font-weight: 800; }
+.feature-chip span { border-left: 1px solid rgba(189, 0, 37, .18); color: var(--ink); padding-left: 10px; font-weight: 650; }
+.popup-on-browser { position: absolute; z-index: 3; right: 90px; border-radius: 17px; box-shadow: 0 28px 64px rgba(47, 29, 21, .24), 0 5px 14px rgba(47, 29, 21, .12); }
+.ready-popup { top: 92px; width: 315px; }
+.progress-popup { top: 46px; width: 316px; }
+.complete-direct { top: 45px; width: 316px; }
+
+.selection-check { position: absolute; z-index: 2; display: grid; width: 29px; height: 29px; place-items: center; border: 3px solid white; border-radius: 50%; background: var(--red); box-shadow: 0 5px 12px rgba(84, 0, 17, .34); color: white; font-size: 16px; font-weight: 900; }
+.c1 { top: 150px; left: 142px; }
+.c2 { top: 151px; left: 493px; }
+.c3 { top: 375px; left: 302px; }
+.c4 { top: 515px; left: 706px; }
+.c5 { top: 325px; left: 1017px; }
+.selection-bar { position: absolute; z-index: 4; right: 225px; bottom: 34px; display: flex; align-items: center; gap: 22px; border: 1px solid rgba(70, 70, 70, .16); border-radius: 14px; background: rgba(255, 255, 255, .97); box-shadow: 0 10px 28px rgba(20, 20, 20, .16); padding: 10px; }
+.selection-info { display: flex; align-items: center; gap: 10px; padding-left: 3px; color: var(--red); font-size: 15px; }
+.selection-info img { width: 34px; height: 34px; border-radius: 10px; }
+.selection-actions { display: flex; gap: 7px; }
+.selection-actions button { border: 0; border-radius: 11px; background: #eee8e3; color: #4d494b; padding: 11px 16px; font: inherit; font-size: 13px; font-weight: 750; }
+.selection-actions .primary { background: var(--red); color: white; }
+.promo-small { background: #f3f4f4; }
+.promo-photo { position: absolute; top: 0; right: 0; width: 53%; height: 100%; overflow: hidden; }
+.promo-photo img { width: 100%; height: 100%; object-fit: cover; object-position: center; }
+.small-copy { position: absolute; z-index: 2; top: 28px; left: 28px; width: 190px; }
+.small-brand { gap: 8px; }
+.small-brand img { width: 34px; height: 34px; border-radius: 10px; }
+.small-brand strong { color: var(--red); font-size: 19px; }
+.small-copy p { margin: 54px 0 0; color: #44484a; font-size: 14px; font-weight: 600; line-height: 1.4; }
+
+.promo-marquee { background: #f3f4f4; }
+.marquee-copy { position: absolute; z-index: 3; top: 78px; left: 82px; width: 560px; }
+.marquee-brand img { width: 56px; height: 56px; border-radius: 16px; }
+.marquee-brand strong { color: var(--red); font-size: 31px; }
+.marquee-copy h1 { margin: 56px 0 14px; color: var(--ink); font-size: 46px; line-height: 1; letter-spacing: -.055em; }
+.marquee-copy p { margin: 0; width: 470px; color: var(--muted); font-size: 17px; line-height: 1.45; }
+.marquee-photo { position: absolute; top: 0; right: 0; width: 57%; height: 100%; overflow: hidden; }
+.marquee-photo img { width: 100%; height: 100%; object-fit: cover; object-position: center; }
+.marquee-popup { position: absolute; z-index: 4; top: 78px; right: 74px; width: 225px; border-radius: 11px; box-shadow: 0 12px 28px rgba(21, 21, 21, .18); }

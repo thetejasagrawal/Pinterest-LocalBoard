@@ -19,9 +19,16 @@ Run these checks before opening a pull request:
 
 ```bash
 node --check extension/popup.js
+node --check extension/background.js
 node --check extension/content.js
 python3 -m json.tool extension/manifest.json >/dev/null
+scripts/build-chrome-web-store-package.sh
+python3 scripts/run-browser-regressions.py
 ```
+
+The browser regression runner requires Chrome or Chromium. Set `CHROME_BIN`
+to its executable path if it is not found automatically. Fixtures use synthetic
+board data and mocked Chrome APIs; they do not replace the live checks below.
 
 Then manually verify:
 

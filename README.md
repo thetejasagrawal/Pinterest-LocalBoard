@@ -5,7 +5,7 @@
 <h1 align="center">Pinterest LocalBoard</h1>
 
 <p align="center">
-  A clean Chrome extension that saves an entire Pinterest board into one local ZIP.
+  A clean Chrome extension that saves Pinterest boards locally in one ZIP or reliable memory-safe parts.
 </p>
 
 <p align="center">
@@ -16,6 +16,9 @@
     <img src="https://img.shields.io/github/license/thetejasagrawal/Pinterest-LocalBoard?style=flat-square" alt="License">
   </a>
   <img src="https://img.shields.io/badge/manifest-v3-black?style=flat-square" alt="Manifest V3">
+  <a href="https://github.com/thetejasagrawal/Pinterest-LocalBoard/releases/tag/v2.0.4">
+    <img src="https://img.shields.io/badge/version-2.0.4-C9002B?style=flat-square" alt="Version 2.0.4">
+  </a>
   <img src="https://img.shields.io/badge/privacy-local%20only-111827?style=flat-square" alt="Privacy local only">
   <a href="https://chromewebstore.google.com/detail/pinterest-localboard/ffalngabgmaancacaigapmkkaoalaama">
     <img src="https://img.shields.io/badge/Chrome%20Web%20Store-available-4285F4?style=flat-square&logo=googlechrome&logoColor=white" alt="Available on Chrome Web Store">
@@ -37,19 +40,38 @@
 </p>
 
 > Built for a simple workflow: open a Pinterest board, click the extension,
-> and download the board as a single ZIP on your machine.
+> and export the board locally as one ZIP or memory-safe ZIP parts.
 
 Pinterest LocalBoard is intentionally focused. It does not use a backend, it
 does not upload your board data, and it does not try to be a Pinterest client.
 It detects the current board page, gathers the highest-quality image URLs the
-page exposes, downloads what it can, and packages the results into one archive.
+page exposes, downloads what it can, and packages the results locally. Large
+boards automatically default to smaller ZIP parts so the browser does not need
+to hold an entire 1,000+ pin archive in memory at once.
+
+## What's New in v2.0.4
+
+This release brings the v2 redesign and reliability work to GitHub: the new
+LocalBoard icon, a warm cream popup, Single ZIP and Smart parts export modes,
+seven-day resume checkpoints, and verified ZIP completion. Scanning and pin
+selection now exclude Pinterest's recommendation feed, and cancellation works
+through image fetching, ZIP packing, and download verification.
+
+<p align="center">
+  <img src="qa/screenshots/popup-v2-ready.png" alt="LocalBoard's redesigned popup with Smart parts selected" width="300">
+  <img src="qa/screenshots/popup-v2-progress.png" alt="LocalBoard exporting a board in numbered ZIP parts" width="300">
+</p>
+
+See the [changelog](CHANGELOG.md) for the full history and the
+[v2.0.4 release](https://github.com/thetejasagrawal/Pinterest-LocalBoard/releases/tag/v2.0.4)
+for the installable ZIP. The Chrome Web Store has a separate release process.
 
 ## Quick Start
 
 1. Install from the
    [Chrome Web Store](https://chromewebstore.google.com/detail/pinterest-localboard/ffalngabgmaancacaigapmkkaoalaama).
 2. Open a Pinterest board your current session can access.
-3. Click `Pinterest LocalBoard` and press `Download ZIP`.
+3. Click `Pinterest LocalBoard`, choose `Single ZIP` or `Smart parts`, and press `Start export`.
 
 ## Features
 
@@ -58,7 +80,11 @@ page exposes, downloads what it can, and packages the results into one archive.
 | Board detection | Detects Pinterest board pages from the active tab and re-checks when Pinterest changes the URL without a full page reload. |
 | Full-quality image capture | Prefers the best `i.pinimg.com` image candidate available, including `originals` when Pinterest exposes it. |
 | Signed-in board support | Works with public boards and private boards your current Pinterest session can view. |
-| One-click ZIP export | Downloads collected images and bundles them into a single ZIP file locally in the browser. |
+| Flexible ZIP export | Saves smaller boards as one ZIP or splits large boards into memory-safe 250-pin ZIP parts. |
+| Large-board scanning | Waits through slow Pinterest loading, nudges stalled feeds, and continues scanning instead of stopping after a short pause. |
+| Resume checkpoints | Continues an interrupted Smart-parts run from the next unfinished ZIP part for up to seven days. |
+| Pin selection | Exports selected board pins and keeps recommendation cards out of the selection. |
+| Verified downloads | Confirms each generated ZIP finishes in Chrome before advancing its resume checkpoint. |
 | Recovery-aware workflow | Retries image downloads, tolerates partial failures, and still completes the ZIP when possible. |
 | Failure reporting | Writes `_download_report.json` into the ZIP with scan details and failed items. |
 | Local history | Stores recent downloads in `chrome.storage.local` with board name, ZIP name, counts, and timestamps. |
@@ -97,7 +123,7 @@ release manually:
 6. Select the unzipped folder.
 
 Direct ZIP for this release:
-[`pinterest-localboard-v1.4.0-chrome-web-store.zip`](https://github.com/thetejasagrawal/Pinterest-LocalBoard/releases/latest/download/pinterest-localboard-v1.4.0-chrome-web-store.zip)
+[`pinterest-localboard-v2.0.4-chrome-web-store.zip`](https://github.com/thetejasagrawal/Pinterest-LocalBoard/releases/download/v2.0.4/pinterest-localboard-v2.0.4-chrome-web-store.zip)
 
 ### Load From Source
 
@@ -119,7 +145,7 @@ Direct ZIP for this release:
 2. Wait until the board content is visible.
 3. Click the extension icon.
 4. Confirm the popup shows the board name.
-5. Click `Download ZIP`.
+5. Choose `Single ZIP` or `Smart parts`, then click `Start export`.
 6. Wait for the archive to finish downloading.
 
 ### Best Results
@@ -133,10 +159,19 @@ Direct ZIP for this release:
 
 ## What You Get
 
-Each export is a ZIP file named like:
+Single-ZIP exports are named like:
 
 ```text
 my_board_localboard_2026-04-09.zip
+```
+
+Smart-parts exports use numbered filenames so a large run is easy to verify and
+resume:
+
+```text
+my_board_localboard_2026-08-19_part-1-of-5.zip
+my_board_localboard_2026-08-19_part-2-of-5.zip
+...
 ```
 
 Inside the archive:
@@ -162,6 +197,7 @@ The report file includes:
 | --- | --- | --- |
 | Popup UI | [`extension/popup.html`](extension/popup.html), [`extension/popup.css`](extension/popup.css), [`extension/popup.js`](extension/popup.js) | Detects the active tab, shows current board state, starts downloads, shows progress, and renders local history. |
 | Content script | [`extension/content.js`](extension/content.js) | Detects board pages, watches Pinterest SPA navigation, scans pins, fetches image candidates, builds the ZIP, and writes history entries. |
+| Background service worker | [`extension/background.js`](extension/background.js) | Verifies and cancels generated ZIP downloads, and reopens the popup from pin selection. |
 | ZIP library | [`extension/vendor/jszip.min.js`](extension/vendor/jszip.min.js) | Generates the archive in-browser. |
 | CI validation | [`.github/workflows/validate.yml`](.github/workflows/validate.yml) | Runs syntax and manifest validation on pushes and pull requests. |
 
@@ -181,8 +217,9 @@ The report file includes:
 | Permission | Why it is needed |
 | --- | --- |
 | `activeTab` | Accesses the currently open tab when you trigger the extension. |
+| `downloads` | Verifies generated ZIPs, and cancels the current generated ZIP when you press Cancel, before marking a Smart-parts checkpoint complete. |
 | `scripting` | Injects the content script into already-open Pinterest tabs when necessary. |
-| `storage` | Saves recent download history locally in the browser. |
+| `storage` | Saves recent download history, the preferred export mode, and a temporary Smart-parts resume checkpoint locally in the browser. |
 
 ### Host Permissions
 
@@ -206,8 +243,10 @@ The report file includes:
   Pinterest session can already view them.
 - Pinterest LocalBoard does not bypass private-board permissions.
 - It depends on Pinterest's current DOM and client-side data exposure.
-- Extremely large boards can still hit browser memory limits because ZIP
-  assembly happens in-browser.
+- Large boards use Smart parts by default to keep browser memory use bounded.
+  Chrome may ask once for permission to allow multiple downloads from Pinterest.
+- Interrupted Smart-parts runs keep a local checkpoint for seven days and resume
+  at the next unfinished ZIP part when the same board is exported again.
 - If Pinterest stops exposing high-quality image URLs in the page, output
   quality may degrade until detection logic is updated.
 
@@ -279,9 +318,22 @@ There is no build step. The project is plain HTML, CSS, and JavaScript.
 
 ```bash
 node --check extension/popup.js
+node --check extension/background.js
 node --check extension/content.js
 python3 -m json.tool extension/manifest.json >/dev/null
+scripts/build-chrome-web-store-package.sh
 ```
+
+Run the browser regression fixtures with Chrome or Chromium installed:
+
+```bash
+python3 scripts/run-browser-regressions.py
+```
+
+The runner serves the fixtures locally and checks large-board exports, resume
+checkpoints, cancellation, and recommendation filtering. It uses synthetic
+boards and mocked image downloads; live Pinterest checks are still part of
+the [release checklist](chrome-web-store/checklist.md).
 
 ### Project Layout
 
@@ -294,7 +346,12 @@ python3 -m json.tool extension/manifest.json >/dev/null
 ├── README.md
 ├── SECURITY.md
 ├── logo.png
+├── chrome-web-store/
+├── qa/
+├── scripts/
 └── extension/
+    ├── assets/
+    ├── background.js
     ├── content.js
     ├── icons/
     ├── manifest.json
@@ -310,7 +367,7 @@ For contribution and validation expectations, see
 ## Roadmap
 
 - Stronger recovery for very large boards
-- Optional background-worker architecture for longer-running jobs
+- Moving more long-running export work out of the page
 - Better reporting for skipped pins and selector mismatches
 
 ## License

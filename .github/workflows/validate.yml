@@ -25,5 +25,11 @@ jobs:
       - name: Check content script syntax
         run: node --check extension/content.js
 
+      - name: Check background worker syntax
+        run: node --check extension/background.js
+
       - name: Validate manifest JSON
         run: python3 -m json.tool extension/manifest.json >/dev/null
+
+      - name: Build the Chrome Web Store package
+        run: scripts/build-chrome-web-store-package.sh

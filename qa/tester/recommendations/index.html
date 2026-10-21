@@ -1,0 +1,794 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Recommendation Boundary Regression Fixture</title>
+    <style>
+      body { margin: 0; font-family: system-ui, sans-serif; }
+      h1, h2, pre { margin: 24px; }
+      .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 24px; }
+      article { min-height: 120px; position: relative; background: #eee; }
+      img { width: 100%; height: 120px; object-fit: cover; }
+    </style>
+  </head>
+  <body>
+    <h1>Recommendation Boundary Regression Fixture</h1>
+    <section id="boardFeed" class="grid"></section>
+    <h2 data-test-id="find-more-ideas">Find more ideas</h2>
+    <section id="recommendationFeed" class="grid"></section>
+    <pre id="result">running</pre>
+
+    <script>
+      const params = new URLSearchParams(location.search);
+      const knownCount = params.get("known") === "1";
+      const selectionLateFixture = params.get("mode") === "selection-late";
+      const visualOrderLateBoundaryFixture =
+        params.get("mode") === "visual-order-late-boundary";
+      const visualOrderBoundaryFixture =
+        params.get("mode") === "visual-order" || visualOrderLateBoundaryFixture;
+      const visualOrderSelectionFixture =
+        params.get("mode") === "visual-order-selection";
+      const plainTextBoundaryFixture = params.get("mode") === "plain-text-boundary";
+      const ariaBoundaryFixture = params.get("mode") === "aria-boundary";
+      const ariaLabelledByBoundaryFixture =
+        params.get("mode") === "aria-labelledby-boundary";
+      const displayContentsBoundaryFixture =
+        params.get("mode") === "display-contents-boundary";
+      const hiddenHeadingFixture = params.get("mode") === "hidden-heading";
+      const inPinHeadingFixture = params.get("mode") === "in-pin-heading";
+      const boardTitleBoundaryFixture = params.get("mode") === "board-title-boundary";
+      const sidebarLateBoundaryFixture =
+        params.get("mode") === "sidebar-late-boundary";
+      const sidebarSelectionFixture = params.get("mode") === "sidebar-selection";
+      const sidebarDuplicateFixture = params.get("mode") === "sidebar-duplicate";
+      const sidebarHeadingFixture =
+        params.get("mode") === "sidebar-heading" ||
+        sidebarLateBoundaryFixture ||
+        sidebarSelectionFixture ||
+        sidebarDuplicateFixture;
+      const attributeSelectionFixture =
+        params.get("mode") === "attribute-selection";
+      const recycledSelectionFixture =
+        params.get("mode") === "recycled-selection";
+      const selectionFixture =
+        params.get("mode") === "selection" ||
+        selectionLateFixture ||
+        visualOrderSelectionFixture ||
+        attributeSelectionFixture ||
+        recycledSelectionFixture ||
+        sidebarSelectionFixture;
+      const stalledScanFixture = params.get("mode") === "stalled";
+      const localizedBoundaryFixture = params.get("mode") === "localized";
+      const metadataBoundaryFixture = params.get("mode") === "metadata-boundary";
+      const selectedMissingFixture = params.get("mode") === "selected-missing";
+      const contextUpgradeFixture = params.get("mode") === "context-upgrade";
+      const runUpgradeFixture = params.get("mode") === "run-upgrade";
+      const staleSpaFixture = params.get("mode") === "stale-spa";
+      const knownSlowFixture = params.get("mode") === "known-slow";
+      const sameBoardAfterBoundaryFixture = params.get("mode") === "same-board-after-boundary";
+      const stateOnlyLateBoundaryFixture =
+        params.get("mode") === "state-only-late-boundary";
+      const stateOnlyNoBoundaryFixture =
+        params.get("mode") === "state-only-no-boundary";
+      const stateOnlyAfterBoundaryFixture =
+        params.get("mode") === "state-only-after-boundary" ||
+        stateOnlyLateBoundaryFixture ||
+        stateOnlyNoBoundaryFixture;
+      const ambiguousDuplicateFixture = params.get("mode") === "ambiguous-duplicate";
+      const lateBoundaryFixture =
+        params.get("mode") === "late-boundary" ||
+        selectionLateFixture ||
+        sidebarLateBoundaryFixture ||
+        stateOnlyLateBoundaryFixture ||
+        visualOrderLateBoundaryFixture;
+      const boardChangeFixture = params.get("mode") === "board-change";
+      const boardPinTotal = stalledScanFixture ? 15 : sidebarDuplicateFixture ? 4 : 3;
+      const testDownloads = [];
+      const testFetches = [];
+      const runtimeMessages = [];
+      const testStorage = {};
+      let firstFetchAt = 0;
+      let churnTimer = 0;
+      let contentMessageListener = null;
+
+      globalThis.chrome = {
+        runtime: {
+          onMessage: {
+            addListener(listener) { contentMessageListener = listener; },
+          },
+          sendMessage(message) {
+            runtimeMessages.push(message);
+            return Promise.resolve({ ok: true });
+          },
+          getURL(path) { return `/extension/${path}`; },
+        },
+        storage: {
+          local: {
+            get(keys) {
+              const requested = Array.isArray(keys) ? keys : [keys];
+              return Promise.resolve(Object.fromEntries(
+                requested
+                  .filter((key) => Object.hasOwn(testStorage, key))
+                  .map((key) => [key, testStorage[key]])
+              ));
+            },
+            set(values) {
+              Object.assign(testStorage, values);
+              return Promise.resolve();
+            },
+            remove(keys) {
+              for (const key of Array.isArray(keys) ? keys : [keys]) delete testStorage[key];
+              return Promise.resolve();
+            },
+          },
+        },
+      };
+
+      globalThis.fetch = async (url) => {
+        firstFetchAt ||= Date.now();
+        testFetches.push(String(url));
+        const blob = new Blob([new Uint8Array([255, 216, 255, 217])], { type: "image/jpeg" });
+        return new Response(blob, { status: 200, headers: { "Content-Type": "image/jpeg" } });
+      };
+
+      HTMLAnchorElement.prototype.click = function click() {
+        testDownloads.push(this.download);
+      };
+
+      const initialProps = document.createElement("script");
+      initialProps.id = "__PWS_INITIAL_PROPS__";
+      initialProps.type = "application/json";
+      initialProps.textContent = JSON.stringify({
+        initialReduxState: {
+          boards: {
+            fixture: {
+              id: "fixture-board",
+              name: "Boundary Fixture",
+              url: "/qa/tester/recommendations/",
+              pin_count: knownCount ? boardPinTotal : 0,
+              section_count: 0,
+              owner: { username: "fixture" },
+            },
+          },
+          pins: {
+            "suggested-1": {
+              board_id: "another-board",
+              images: { orig: { url: "https://i.pinimg.com/originals/suggested/1.jpg" } },
+            },
+          },
+        },
+      });
+      if (sameBoardAfterBoundaryFixture) {
+        const props = JSON.parse(initialProps.textContent);
+        props.initialReduxState.boards.fixture.pin_count = 3;
+        props.initialReduxState.pins["board-late"] = {
+          board_id: "fixture-board",
+          images: { orig: { url: "https://i.pinimg.com/originals/board/board-late.jpg" } },
+        };
+        initialProps.textContent = JSON.stringify(props);
+      }
+      if (stateOnlyAfterBoundaryFixture) {
+        const props = JSON.parse(initialProps.textContent);
+        props.initialReduxState.boards.fixture.pin_count = 3;
+        props.initialReduxState.pins["state-only-suggestion"] = {
+          board_id: "fixture-board",
+          images: {
+            orig: {
+              url: "https://i.pinimg.com/originals/suggested/state-only-suggestion.jpg",
+            },
+          },
+        };
+        initialProps.textContent = JSON.stringify(props);
+      }
+      if (visualOrderLateBoundaryFixture) {
+        const props = JSON.parse(initialProps.textContent);
+        props.initialReduxState.boards.fixture.pin_count = 3;
+        initialProps.textContent = JSON.stringify(props);
+      }
+      if (sidebarDuplicateFixture) {
+        const props = JSON.parse(initialProps.textContent);
+        props.initialReduxState.boards.fixture.pin_count = 4;
+        props.initialReduxState.pins["shared-pin"] = {
+          board_id: "fixture-board",
+          images: {
+            orig: { url: "https://i.pinimg.com/originals/board/shared-pin.jpg" },
+          },
+        };
+        initialProps.textContent = JSON.stringify(props);
+      }
+      if (boardTitleBoundaryFixture) {
+        const props = JSON.parse(initialProps.textContent);
+        props.initialReduxState.boards.fixture.name = "Find more ideas for my kitchen";
+        initialProps.textContent = JSON.stringify(props);
+        document.querySelector("h1").textContent = "Find more ideas for my kitchen";
+      }
+      if (staleSpaFixture) {
+        const props = JSON.parse(initialProps.textContent);
+        props.initialReduxState.boards.fixture = {
+          ...props.initialReduxState.boards.fixture,
+          id: "stale-board",
+          name: "Stale Board A",
+          url: "/old-owner/old-board/",
+        };
+        initialProps.textContent = JSON.stringify(props);
+      }
+      if (runUpgradeFixture) {
+        const props = JSON.parse(initialProps.textContent);
+        props.initialReduxState.boards.fixture.pin_count = 3;
+        initialProps.textContent = JSON.stringify(props);
+      }
+      if (
+        lateBoundaryFixture ||
+        visualOrderBoundaryFixture ||
+        visualOrderSelectionFixture ||
+        plainTextBoundaryFixture ||
+        ariaBoundaryFixture ||
+        ariaLabelledByBoundaryFixture ||
+        displayContentsBoundaryFixture ||
+        attributeSelectionFixture
+      ) {
+        const props = JSON.parse(initialProps.textContent);
+        delete props.initialReduxState.pins["suggested-1"];
+        initialProps.textContent = JSON.stringify(props);
+      }
+      if (!contextUpgradeFixture && !runUpgradeFixture) {
+        document.head.appendChild(initialProps);
+      }
+
+      function addPin(feed, id, group) {
+        const pin = document.createElement("article");
+        pin.dataset.testId = "pin";
+        pin.dataset.testPinId = id;
+        pin.innerHTML = `
+          <a href="/pin/${id}/" aria-label="${group} ${id}">
+            <img src="https://i.pinimg.com/1200x/${group}/${id}.jpg" alt="${group} ${id}" />
+          </a>
+        `;
+        feed.appendChild(pin);
+      }
+
+      for (let index = 1; index <= boardPinTotal; index += 1) {
+        addPin(
+          document.getElementById("boardFeed"),
+          sidebarDuplicateFixture && index === boardPinTotal
+            ? "shared-pin"
+            : `board-${index}`,
+          "board"
+        );
+      }
+
+      if (hiddenHeadingFixture) {
+        const hiddenHeading = document.createElement("h2");
+        hiddenHeading.textContent = "Find more ideas";
+        hiddenHeading.style.visibility = "hidden";
+        document.body.insertBefore(hiddenHeading, document.getElementById("boardFeed"));
+      }
+
+      if (inPinHeadingFixture) {
+        const pinHeading = document.createElement("h3");
+        pinHeading.textContent = "Find more ideas for small bedrooms";
+        document.querySelector('[data-test-pin-id="board-2"]')?.appendChild(pinHeading);
+      }
+
+      if (sidebarHeadingFixture) {
+        const boardFeed = document.getElementById("boardFeed");
+        const layout = document.createElement("section");
+        const mainColumn = document.createElement("div");
+        const sidebar = document.createElement("aside");
+        const sidebarHeading = document.createElement(
+          sidebarLateBoundaryFixture ? "h2" : "div"
+        );
+        layout.className = "sidebar-layout";
+        layout.style.display = "grid";
+        layout.style.gridTemplateColumns = "minmax(0, 1fr) 220px";
+        layout.style.gap = "24px";
+        mainColumn.style.minWidth = "0";
+        mainColumn.className = "sidebar-main-column";
+        sidebarHeading.textContent = "More like this";
+        sidebar.appendChild(sidebarHeading);
+        addPin(
+          sidebar,
+          sidebarDuplicateFixture ? "shared-pin" : "sidebar-1",
+          "suggested"
+        );
+        if (sidebarLateBoundaryFixture) {
+          sidebar
+            .querySelector('[data-test-pin-id="sidebar-1"]')
+            ?.setAttribute("data-board-id", "another-board");
+        }
+        document.body.insertBefore(layout, boardFeed);
+        layout.append(mainColumn, sidebar);
+        mainColumn.appendChild(boardFeed);
+      }
+
+      if (
+        stalledScanFixture ||
+        knownSlowFixture ||
+        boardChangeFixture ||
+        stateOnlyNoBoundaryFixture
+      ) {
+        document.querySelector('[data-test-id="find-more-ideas"]').remove();
+        document.getElementById("recommendationFeed").remove();
+
+        if (stalledScanFixture) {
+          const churn = document.createElement("div");
+          churn.id = "virtualizedFeedChurn";
+          document.body.appendChild(churn);
+          churnTimer = window.setInterval(() => {
+            const spacer = document.createElement("i");
+            spacer.style.display = "block";
+            spacer.style.height = "2px";
+            churn.appendChild(spacer);
+          }, 200);
+        } else if (knownSlowFixture) {
+          const props = JSON.parse(initialProps.textContent);
+          props.initialReduxState.boards.fixture.pin_count = 4;
+          initialProps.textContent = JSON.stringify(props);
+          window.setTimeout(() => {
+            addPin(document.getElementById("boardFeed"), "board-4", "board");
+          }, 13_500);
+        } else if (boardChangeFixture) {
+          window.setTimeout(() => {
+            history.pushState({}, "", "/qa/tester/changed-board/");
+          }, 1_200);
+        }
+      } else {
+        for (let index = 1; index <= 6; index += 1) {
+          addPin(
+            document.getElementById("recommendationFeed"),
+            lateBoundaryFixture ? `outside-${index}` : `suggested-${index}`,
+            lateBoundaryFixture ? "outside" : "suggested"
+          );
+        }
+
+        if (sameBoardAfterBoundaryFixture) {
+          addPin(document.getElementById("recommendationFeed"), "board-late", "board");
+        }
+        if (ambiguousDuplicateFixture) {
+          addPin(document.getElementById("recommendationFeed"), "board-1", "board");
+        }
+
+        if (sidebarHeadingFixture) {
+          const mainColumn = document.querySelector(".sidebar-main-column");
+          mainColumn.append(
+            document.querySelector('[data-test-id="find-more-ideas"]'),
+            document.getElementById("recommendationFeed")
+          );
+        }
+
+        if (lateBoundaryFixture && !visualOrderLateBoundaryFixture) {
+          const heading = document.querySelector('[data-test-id="find-more-ideas"]');
+          const recommendationFeed = document.getElementById("recommendationFeed");
+          heading.remove();
+          recommendationFeed.id = "secondaryFeed";
+          window.setTimeout(() => {
+            recommendationFeed.parentElement.insertBefore(heading, recommendationFeed);
+          }, 2_200);
+        }
+
+        if (localizedBoundaryFixture) {
+          const heading = document.querySelector('[data-test-id="find-more-ideas"]');
+          heading.removeAttribute("data-test-id");
+          heading.textContent = "Mehr Ideen";
+          document.getElementById("recommendationFeed").id = "secondaryFeed";
+        }
+
+        if (metadataBoundaryFixture) {
+          document.querySelector('[data-test-id="find-more-ideas"]').remove();
+          document.getElementById("recommendationFeed").id = "secondaryFeed";
+        }
+
+        if (plainTextBoundaryFixture) {
+          const heading = document.querySelector('[data-test-id="find-more-ideas"]');
+          const plainHeading = document.createElement("div");
+          plainHeading.textContent = "Find more ideas for this board";
+          heading.replaceWith(plainHeading);
+          document.getElementById("recommendationFeed").id = "secondaryFeed";
+        }
+
+        if (ariaBoundaryFixture) {
+          const heading = document.querySelector('[data-test-id="find-more-ideas"]');
+          const ariaHeading = document.createElement("div");
+          ariaHeading.setAttribute("role", "heading");
+          ariaHeading.setAttribute("aria-label", "Mehr Ideen");
+          ariaHeading.style.height = "28px";
+          heading.replaceWith(ariaHeading);
+          document.getElementById("recommendationFeed").id = "secondaryFeed";
+        }
+
+        if (ariaLabelledByBoundaryFixture) {
+          const heading = document.querySelector('[data-test-id="find-more-ideas"]');
+          const region = document.createElement("section");
+          const label = document.createElement("span");
+          label.id = "recommendation-region-label";
+          label.textContent = "Mehr Ideen";
+          region.setAttribute("role", "region");
+          region.setAttribute("aria-labelledby", label.id);
+          region.appendChild(label);
+          heading.replaceWith(region);
+          document.getElementById("recommendationFeed").id = "secondaryFeed";
+        }
+
+        if (displayContentsBoundaryFixture) {
+          const heading = document.querySelector('[data-test-id="find-more-ideas"]');
+          heading.removeAttribute("data-test-id");
+          heading.style.display = "contents";
+          document.getElementById("recommendationFeed").id = "secondaryFeed";
+        }
+
+        if (attributeSelectionFixture) {
+          const heading = document.querySelector('[data-test-id="find-more-ideas"]');
+          heading.removeAttribute("data-test-id");
+          heading.className = "attribute-boundary-fixture";
+          heading.textContent = "Explore more";
+          document.getElementById("recommendationFeed").id = "secondaryFeed";
+        }
+
+        if (visualOrderBoundaryFixture || visualOrderSelectionFixture) {
+          const boardFeed = document.getElementById("boardFeed");
+          const heading = document.querySelector('[data-test-id="find-more-ideas"]');
+          const suggestionFeed = document.getElementById("recommendationFeed");
+          const visualLayout = document.createElement("section");
+          visualLayout.className = "visual-order-layout";
+          visualLayout.style.display = "flex";
+          visualLayout.style.flexDirection = "column";
+          document.body.insertBefore(visualLayout, boardFeed);
+
+          suggestionFeed.id = "secondaryFeed";
+          boardFeed.style.order = "1";
+          heading.style.order = "2";
+          suggestionFeed.style.order = "3";
+
+          // Source order intentionally differs from rendered order. Pinterest's
+          // masonry/portal layout can place a suggestion feed before its heading
+          // in the DOM even though it appears below "Find more ideas" on screen.
+          visualLayout.append(suggestionFeed, heading, boardFeed);
+          if (visualOrderLateBoundaryFixture) {
+            heading.remove();
+            window.setTimeout(() => {
+              visualLayout.insertBefore(heading, boardFeed);
+            }, 2_200);
+          }
+        }
+      }
+
+      function sendContentMessage(message) {
+        return new Promise((resolve, reject) => {
+          if (!contentMessageListener) {
+            reject(new Error("content listener missing"));
+            return;
+          }
+          contentMessageListener(message, {}, resolve);
+        });
+      }
+
+      function finish(result) {
+        document.body.dataset.testResult = result.passed ? "passed" : "failed";
+        document.getElementById("result").textContent = JSON.stringify(result, null, 2);
+      }
+    </script>
+    <script src="../../../extension/vendor/jszip.min.js"></script>
+    <script src="../../../extension/content.js"></script>
+    <script>
+      (async () => {
+        try {
+          if (runUpgradeFixture) {
+            const fallbackContext = await sendContentMessage({ type: "GET_CONTEXT" });
+            const start = await sendContentMessage({
+              type: "START_DOWNLOAD",
+              exportMode: "single",
+            });
+            document.head.appendChild(initialProps);
+            if (!start.ok) throw new Error("fixture could not start");
+
+            const deadline = Date.now() + 10_000;
+            let status = await sendContentMessage({ type: "GET_STATUS" });
+            while (!["done", "error"].includes(status.stage) && Date.now() < deadline) {
+              await new Promise((resolve) => setTimeout(resolve, 50));
+              status = await sendContentMessage({ type: "GET_STATUS" });
+            }
+            const upgradedContext = await sendContentMessage({ type: "GET_CONTEXT" });
+            finish({
+              passed:
+                fallbackContext.matchSource === "Board URL pattern" &&
+                fallbackContext.boardKey.startsWith("url:") &&
+                upgradedContext.boardId === "fixture-board" &&
+                upgradedContext.boardKey === "id:fixture-board" &&
+                status.boardKey === "id:fixture-board" &&
+                status.stage === "done" &&
+                status.expected === 3 &&
+                status.collected === 3 &&
+                testFetches.length === 3 &&
+                !testFetches.some(
+                  (url) => url.includes("/suggested/") || url.includes("/outside/")
+                ),
+              fallbackContext,
+              upgradedContext,
+              status,
+              downloads: testDownloads,
+              fetches: testFetches,
+            });
+            return;
+          }
+
+          if (contextUpgradeFixture || staleSpaFixture) {
+            const fallbackContext = await sendContentMessage({ type: "GET_CONTEXT" });
+            if (contextUpgradeFixture) {
+              document.head.appendChild(initialProps);
+            } else {
+              const props = JSON.parse(initialProps.textContent);
+              props.initialReduxState.boards.fixture = {
+                ...props.initialReduxState.boards.fixture,
+                id: "fixture-board",
+                name: "Boundary Fixture",
+                url: "/qa/tester/recommendations/",
+              };
+              initialProps.textContent = JSON.stringify(props);
+            }
+            const upgradedContext = await sendContentMessage({ type: "GET_CONTEXT" });
+            finish({
+              passed:
+                fallbackContext.ok === true &&
+                fallbackContext.matchSource === "Board URL pattern" &&
+                fallbackContext.boardId === "" &&
+                fallbackContext.protocolVersion === 4 &&
+                fallbackContext.boardKey.startsWith("url:") &&
+                upgradedContext.ok === true &&
+                upgradedContext.matchSource === "Pinterest board state" &&
+                upgradedContext.boardId === "fixture-board" &&
+                upgradedContext.boardKey === "id:fixture-board" &&
+                upgradedContext.protocolVersion === 4,
+              fallbackContext,
+              upgradedContext,
+              staleSpaFixture,
+            });
+            return;
+          }
+
+          if (selectionFixture) {
+            await sendContentMessage({ type: "ENTER_SELECTION_MODE" });
+            await new Promise((resolve) => setTimeout(resolve, 150));
+
+            const recommendationFeed =
+              document.getElementById("recommendationFeed") ||
+              document.getElementById("secondaryFeed");
+            const earlyRecommendationCheckboxes =
+              recommendationFeed?.querySelectorAll(".__lb_chk__").length || 0;
+            if (selectionLateFixture) {
+              await new Promise((resolve) => setTimeout(resolve, 2_600));
+            }
+            if (attributeSelectionFixture) {
+              document
+                .querySelector(".attribute-boundary-fixture")
+                ?.setAttribute("aria-label", "Mehr Ideen");
+              await new Promise((resolve) => setTimeout(resolve, 400));
+            }
+
+            const host = document.getElementById("__lb_sel_bar__");
+            const bar = host?.shadowRoot?.querySelector(".bar");
+            const logo = host?.shadowRoot?.querySelector(".logo");
+            const wholeBoardButton = host?.shadowRoot?.querySelector(".exit");
+            const boardCheckboxes = document.querySelectorAll("#boardFeed .__lb_chk__").length;
+            const recommendationCheckboxes =
+              recommendationFeed?.querySelectorAll(".__lb_chk__").length || 0;
+            const sidebarRecommendationCheckboxes =
+              document.querySelectorAll("aside .__lb_chk__").length;
+            const barHeight = bar?.getBoundingClientRect().height || 0;
+            const logoLoaded = Boolean(logo?.complete && logo?.naturalWidth > 0);
+
+            document.querySelector("#boardFeed article")?.dispatchEvent(
+              new MouseEvent("click", { bubbles: true, cancelable: true })
+            );
+            const selectedBeforeExit = await sendContentMessage({ type: "GET_SELECTION_STATE" });
+            let recycledSelection = null;
+            if (recycledSelectionFixture) {
+              const recycledPin = document.querySelector('[data-test-pin-id="board-1"]');
+              recycledPin.setAttribute("data-test-pin-id", "board-recycled");
+              await new Promise((resolve) => setTimeout(resolve, 350));
+              const afterIdChange = await sendContentMessage({ type: "GET_SELECTION_STATE" });
+              const staleSelectedCleared = !recycledPin.hasAttribute("data-lb-sel");
+              const checkboxKeptForNewId = Boolean(recycledPin.querySelector(".__lb_chk__"));
+
+              recycledPin.setAttribute("data-test-pin-id", "board-1");
+              await new Promise((resolve) => setTimeout(resolve, 350));
+              const selectedStylingRestored = recycledPin.hasAttribute("data-lb-sel");
+
+              recycledPin.removeAttribute("data-test-pin-id");
+              await new Promise((resolve) => setTimeout(resolve, 350));
+              const controlsRemovedWithoutId =
+                !recycledPin.hasAttribute("data-lb-selectable") &&
+                !recycledPin.hasAttribute("data-lb-sel") &&
+                !recycledPin.querySelector(".__lb_chk__");
+
+              recycledPin.setAttribute("data-test-pin-id", "board-1");
+              await new Promise((resolve) => setTimeout(resolve, 350));
+              recycledSelection = {
+                afterIdChange,
+                staleSelectedCleared,
+                checkboxKeptForNewId,
+                selectedStylingRestored,
+                controlsRemovedWithoutId,
+                restoredAfterIdReturn:
+                  recycledPin.hasAttribute("data-lb-sel") &&
+                  Boolean(recycledPin.querySelector(".__lb_chk__"))
+              };
+            }
+
+            document.querySelector('[data-test-id="find-more-ideas"]')?.remove();
+            recommendationFeed?.remove();
+            addPin(document.getElementById("boardFeed"), "board-virtualized", "board");
+            await new Promise((resolve) => setTimeout(resolve, 350));
+            const virtualizedBoardCheckboxes = document.querySelectorAll("#boardFeed .__lb_chk__").length;
+
+            wholeBoardButton?.click();
+            await new Promise((resolve) => setTimeout(resolve, 150));
+            const selectedAfterExit = await sendContentMessage({ type: "GET_SELECTION_STATE" });
+
+            finish({
+              passed:
+                boardCheckboxes === 3 &&
+                ((!selectionLateFixture && !attributeSelectionFixture) ||
+                  earlyRecommendationCheckboxes === 6) &&
+                recommendationCheckboxes === 0 &&
+                sidebarRecommendationCheckboxes === 0 &&
+                virtualizedBoardCheckboxes === 4 &&
+                barHeight >= 66 &&
+                logoLoaded &&
+                wholeBoardButton?.textContent.trim() === "Whole board" &&
+                selectedBeforeExit.active === true &&
+                selectedBeforeExit.count === 1 &&
+                (!recycledSelectionFixture ||
+                  (recycledSelection?.afterIdChange?.count === 1 &&
+                    recycledSelection?.afterIdChange?.ids?.[0] === "board-1" &&
+                    recycledSelection?.staleSelectedCleared &&
+                    recycledSelection?.checkboxKeptForNewId &&
+                    recycledSelection?.selectedStylingRestored &&
+                    recycledSelection?.controlsRemovedWithoutId &&
+                    recycledSelection?.restoredAfterIdReturn)) &&
+                selectedAfterExit.active === false &&
+                selectedAfterExit.count === 0 &&
+                runtimeMessages.some((message) => message?.type === "OPEN_LOCALBOARD_POPUP"),
+              boardCheckboxes,
+              recommendationCheckboxes,
+              sidebarRecommendationCheckboxes,
+              earlyRecommendationCheckboxes,
+              selectionLateFixture,
+              attributeSelectionFixture,
+              recycledSelectionFixture,
+              sidebarSelectionFixture,
+              recycledSelection,
+              virtualizedBoardCheckboxes,
+              barHeight,
+              logoLoaded,
+              selectedBeforeExit,
+              selectedAfterExit,
+              runtimeMessages,
+            });
+            return;
+          }
+
+          if (selectedMissingFixture) {
+            const start = await sendContentMessage({
+              type: "START_DOWNLOAD",
+              pinIds: ["board-1", "missing-selected-pin"],
+              exportMode: "single",
+            });
+            if (!start.ok) throw new Error("fixture could not start");
+
+            const deadline = Date.now() + 5_000;
+            let status = await sendContentMessage({ type: "GET_STATUS" });
+            while (!["done", "error"].includes(status.stage) && Date.now() < deadline) {
+              await new Promise((resolve) => setTimeout(resolve, 50));
+              status = await sendContentMessage({ type: "GET_STATUS" });
+            }
+
+            finish({
+              passed:
+                status.stage === "error" &&
+                status.error.includes("Could not find 1 of 2 selected pins") &&
+                status.error.includes("No partial ZIP was created") &&
+                testFetches.length === 0 &&
+                testDownloads.length === 0,
+              status,
+              fetches: testFetches,
+              downloads: testDownloads,
+            });
+            return;
+          }
+
+          if (boardChangeFixture) {
+            const start = await sendContentMessage({
+              type: "START_DOWNLOAD",
+              exportMode: "single",
+            });
+            if (!start.ok) throw new Error("fixture could not start");
+
+            const deadline = Date.now() + 5_000;
+            let status = await sendContentMessage({ type: "GET_STATUS" });
+            while (!["done", "error"].includes(status.stage) && Date.now() < deadline) {
+              await new Promise((resolve) => setTimeout(resolve, 50));
+              status = await sendContentMessage({ type: "GET_STATUS" });
+            }
+
+            finish({
+              passed:
+                status.stage === "cancelled" &&
+                testFetches.length === 0 &&
+                testDownloads.length === 0,
+              status,
+              fetches: testFetches,
+              downloads: testDownloads,
+            });
+            return;
+          }
+
+          const context = await sendContentMessage({ type: "GET_CONTEXT" });
+          const startedAt = Date.now();
+          const start = await sendContentMessage({
+            type: "START_DOWNLOAD",
+            exportMode: "single",
+          });
+          if (!context.ok || !start.ok) throw new Error("fixture could not start");
+
+          const deadline = Date.now() + (knownSlowFixture ? 25_000 : stalledScanFixture ? 25_000 : 15_000);
+          let status = await sendContentMessage({ type: "GET_STATUS" });
+          while (!['done', 'error'].includes(status.stage) && Date.now() < deadline) {
+            await new Promise((resolve) => setTimeout(resolve, 50));
+            status = await sendContentMessage({ type: "GET_STATUS" });
+          }
+
+          const scanToFirstFetchMs = firstFetchAt ? firstFetchAt - startedAt : null;
+          if (churnTimer) window.clearInterval(churnTimer);
+
+          const expectedPinTotal = knownSlowFixture ? 4 : boardPinTotal;
+          finish({
+            passed:
+              status.stage === "done" &&
+              status.collected === expectedPinTotal &&
+              status.downloaded === expectedPinTotal &&
+              status.failed === 0 &&
+              testDownloads.length === 1 &&
+              (!stalledScanFixture || scanToFirstFetchMs <= 20_000) &&
+              (!sidebarLateBoundaryFixture || scanToFirstFetchMs >= 2_000) &&
+              !testFetches.some(
+                (url) => url.includes("/suggested/") || url.includes("/outside/")
+              ) &&
+              (!sameBoardAfterBoundaryFixture ||
+                !testFetches.some((url) => url.includes("board-late"))),
+            knownCount,
+            stalledScanFixture,
+            knownSlowFixture,
+            localizedBoundaryFixture,
+            metadataBoundaryFixture,
+            sameBoardAfterBoundaryFixture,
+            stateOnlyAfterBoundaryFixture,
+            stateOnlyLateBoundaryFixture,
+            stateOnlyNoBoundaryFixture,
+            ambiguousDuplicateFixture,
+            lateBoundaryFixture,
+            visualOrderBoundaryFixture,
+            visualOrderLateBoundaryFixture,
+            plainTextBoundaryFixture,
+            ariaBoundaryFixture,
+            ariaLabelledByBoundaryFixture,
+            displayContentsBoundaryFixture,
+            hiddenHeadingFixture,
+            inPinHeadingFixture,
+            boardTitleBoundaryFixture,
+            sidebarHeadingFixture,
+            sidebarLateBoundaryFixture,
+            sidebarDuplicateFixture,
+            scanToFirstFetchMs,
+            context,
+            status,
+            downloads: testDownloads,
+            fetches: testFetches,
+          });
+        } catch (error) {
+          if (churnTimer) window.clearInterval(churnTimer);
+          finish({ passed: false, error: error.message });
+        }
+      })();
+    </script>
+  </body>
+</html>
